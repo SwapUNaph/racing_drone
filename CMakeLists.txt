@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
+  tf
 )
 
 ## System dependencies are found with CMake's conventions
@@ -128,6 +129,11 @@ include_directories(
  add_library(state_estimator_core
    include/racing_drone/state_estimator_core.cpp
  )
+ 
+ add_library(kalman_filter
+   include/racing_drone/KalmanFilter.cpp
+ )
+ 
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -154,6 +160,7 @@ include_directories(
  target_link_libraries(
  	state_estimator
  	state_estimator_core
+ 	kalman_filter
    ${catkin_LIBRARIES}
  )
  

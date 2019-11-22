@@ -18,28 +18,51 @@ int main(int argc, char **argv)
 {  
   // Set up ROS.
   ros::init(argc, argv, "state_estimator");
-  //ros::NodeHandle n;
   
-  //State-Estimator
-  StateEstimator estimator;
-  
-  //std::string subTopic = "/ground_truth/state";
+  //Kalman Filter 
+  	int n=3; //States
+	int m=3; //Inputs
+	int p=3; //Outputs
+	
+	matrix<double> f(3,3);
+	matrix<double> b(3,3);
+	matrix<double> h(3,3);
+	matrix<double> q(3,3);
+	matrix<double> r(3,3);
+	vector<double> x0(3);
+	double dt = 1/500.0;
+	
+	for(int i=0; i<n; i++)
+	{
+		f(i,i) = 1.0;
+		h(i,i) = 1.0;
+		q(i,i) = 1e-2;
+	} 
+	
+	for(int i=0; i<p; i++)
+	{
+		r(i,i) = 0.1;
+	} 
+	
+	b(0,0) = dt;
+	b(1,1) = dt;
+	b(2,2) = dt;
+	
+	KalmanFilter KF(f,b,h,q,r,x0);
+	
+	 //State-Estimator
+	 StateEstimator estimator(500.0, KF); //200 Hz 
 
-  //// Create a subscriber.
-  //// Name the topic, message queue, callback function with class name, and object containing callback function.
-  //ros::Subscriber sub_message = n.subscribe(subTopic.c_str(), 1000, odomClback);
+	  // Tell ROS how fast to run this node.
+	  ros::Rate rosRate(estimator.rate); 
 
-  // Tell ROS how fast to run this node.
-  ros::Rate r(5); //100 Hz
+	  // Main loop.
+	  while (estimator.nh.ok())
+	  {
+		estimator.publishOdometry();
+		ros::spinOnce();
+		rosRate.sleep();
+	  }
 
-  // Main loop.
-  while (estimator.nh.ok())
-  {
-	//Propagate the model
-	estimator.publishOdometry();
-    ros::spinOnce();
-    r.sleep();
-  }
-
-  return 0;
+	  return 0;
 } // end main()

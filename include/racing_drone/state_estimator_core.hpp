@@ -3,8 +3,7 @@
 #include <ros/ros.h>
 #include <ros/time.h>
 #include <nav_msgs/Odometry.h>
-
-using std::string;
+#include "KalmanFilter.hpp"
 
 class StateEstimator
 {
@@ -12,10 +11,15 @@ public:
 	ros::Publisher odomPublisher;
 	ros::Subscriber odomSubscriber;
 	ros::NodeHandle nh;
-	nav_msgs::Odometry odomIn;
+	int rate;
+	KalmanFilter KF;
+	nav_msgs::Odometry odomOut;
 	
-	StateEstimator();
+	StateEstimator(int rt, KalmanFilter kf);
 	~StateEstimator();
+	
 	void odomCallback(const nav_msgs::Odometry::ConstPtr& odom);
 	void publishOdometry(void);
 };
+
+
