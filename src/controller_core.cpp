@@ -1,8 +1,8 @@
-#include "controller_core.hpp"
+#include "racing_drone/controller_core.hpp"
 
 
 //------------------------- Controller -------------------------------
-Controller::Controller(int rt, int n, std::vector<double> p) : rate(rt), quad_mpc(n, p, 1.0/rt)
+Controller::Controller(int rt, int n, std::vector<double> p, double dt_) : rate(rt), quad_mpc(n, p, dt_)
 {
 	currState.resize(9);
 	std::string pubTopic = "/cmd_vel";
@@ -29,7 +29,7 @@ void Controller::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
 	tf::Quaternion q(odom->pose.pose.orientation.x, odom->pose.pose.orientation.y,
 					odom->pose.pose.orientation.z, odom->pose.pose.orientation.w);
 	tf::Matrix3x3 R(q);
-	R.getRPY(&currState[6], &currState[7], &currState[8]);
+	R.getRPY(currState[6], currState[7], currState[8]);
 }
 
 void Controller::refCallback(const geometry_msgs::Pose::ConstPtr& refPse)
@@ -39,8 +39,8 @@ void Controller::refCallback(const geometry_msgs::Pose::ConstPtr& refPse)
 
 void Controller::computeControlInput(void)
 {
-	vector<double> x0(9), xN(9);
-	std::copy(currState.begin(), currStat.end()-3, x0.begin());
+	std::vector<double> x0(9), xN(9);
+	std::copy(currState.begin(), currState.end()-3, x0.begin());
 	xN[0] = refPose.position.x;
 	xN[1] = refPose.position.y;
 	xN[2] = refPose.position.z;
@@ -49,18 +49,20 @@ void Controller::computeControlInput(void)
 	tf::Quaternion q(refPose.orientation.x, refPose.orientation.y,
 					refPose.orientation.z, refPose.orientation.w);
 	tf::Matrix3x3 R(q);
-	vector<double> rpy(3);
-	R.getRPY(&rpy[0], &rpy[1], &rpy[2]);
+	std::vector<double> rpy(3);
+	R.getRPY(rpy[0], rpy[1], rpy[2]);
 
 	double yaw_control = 0.5 * (rpy[2] - currState[8]);
 
-	controlInput.linear.x = quad_mpc.sol_x[0];
-	controlInput.linear.y = - quad_mpc.sol_x[1];
-	controlInput.linear.z = quad_mpc.sol_x[2];
+	controlInput.linear.x = quad_mpc.sol_x[6];
+	controlInput.linear.y = - quad_mpc.sol_x[7];
+	controlInput.linear.z = quad_mpc.sol_x[8];
 	controlInput.angular.z = yaw_control;
 }
 
 void Controller::publishControlInput(void)
 {
 	cmdPublisher.publish(controlInput);
+	ROS_INFO( "Control Published: theta: %f, phi: %f, T: %f, yaw: %f ", controlInput.linear.x,
+			 controlInput.linear.y, controlInput.linear.z, controlInput.angular.z);
 }

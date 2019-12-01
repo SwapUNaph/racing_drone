@@ -1,15 +1,7 @@
-#include "MPC.hpp"
-
-//state: x0, y0, z0, vx0, vy0, vz0, th0, phi0, T0, ..., xN, yN, zN, vxN, vyN, vzN, thN, phiN, TN,   : 9*10 states
-
-MPC::MPC(int n, std::vector<double> p, double dt_): N(n), P(p), dt(dt_)
-{
-    Ns = 9;
-    sol_x.resize(N*Ns);
-}
+#include "racing_drone/MPC.hpp"
 
 //Position constraints
-double MPC::dynamic_constraint_position(const std::vector<double> &x, std::vector<double> &grad, void *pos_const_data)
+double dynamic_constraint_position(const std::vector<double> &x, std::vector<double> &grad, void *pos_const_data)
 { 
 	pos_const_struct *pos_struct = reinterpret_cast<pos_const_struct*>(pos_const_data);
 	unsigned int ind = pos_struct->i;
@@ -30,7 +22,7 @@ double MPC::dynamic_constraint_position(const std::vector<double> &x, std::vecto
 }
 
 //Velocity constraints
-double MPC::dynamic_constraint_velocity(const std::vector<double> &x, std::vector<double> &grad, void *vel_const_data)
+double dynamic_constraint_velocity(const std::vector<double> &x, std::vector<double> &grad, void *vel_const_data)
 { 
 	vel_const_struct* vel_struct = reinterpret_cast<vel_const_struct*>(vel_const_data);
 	unsigned int i = vel_struct->i;
@@ -107,7 +99,7 @@ double MPC::dynamic_constraint_velocity(const std::vector<double> &x, std::vecto
 
 
 //Endpoint constraints
-double MPC::end_point_constraints(const std::vector<double> &x, std::vector<double> &grad, void* ep_const_data)
+double end_point_constraints(const std::vector<double> &x, std::vector<double> &grad, void* ep_const_data)
 {
 	end_pnt_const_struct* ep_data = reinterpret_cast<end_pnt_const_struct* >(ep_const_data);
 	unsigned int ind = ep_data->i;
@@ -127,7 +119,7 @@ double MPC::end_point_constraints(const std::vector<double> &x, std::vector<doub
 
 
 // Cost function
-double MPC::cost_function(const std::vector<double> &x, std::vector<double> &grad, void* cost_func_data)
+double cost_function(const std::vector<double> &x, std::vector<double> &grad, void* cost_func_data)
 {
 	std::vector<double> *q_ref = reinterpret_cast<std::vector<double>*>(cost_func_data);
 	unsigned int Ns = (q_ref->size())/2;
@@ -155,9 +147,19 @@ double MPC::cost_function(const std::vector<double> &x, std::vector<double> &gra
 	return cost;
 }
 
+//state: x0, y0, z0, vx0, vy0, vz0, th0, phi0, T0, ..., xN, yN, zN, vxN, vyN, vzN, thN, phiN, TN,   : 9*N states
+
+MPC::MPC(unsigned int n, std::vector<double> p, double dt_): N(n), P(p), dt(dt_)
+{
+    Ns = 9;
+    sol_x.resize(N*Ns);
+}
+
+MPC::~MPC(){}
+
 int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 {
-    auto start = std::chrono::system_clock::now();
+    // auto start = std::chrono::system_clock::now();
 	// unsigned int Ns = 9; //States
 	// unsigned int N = 10; //Prediction steps
 	// double dt = 0.1; // Time step in s
@@ -169,16 +171,16 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 	
 	// double psi = 0.0;
 	
-	nlopt::opt opt(nlopt::LD_SLSQP, Ns*N);
+	nlopt::opt OPT(nlopt::LD_SLSQP, Ns*N);
 	
 	std::vector<double> Q_ref(2*Ns); //Penalties for states and inputs (Ns) and reference (Ns)
 	std::copy(P.begin(), P.end(), Q_ref.begin()); // Fill all penalties with P
 	std::copy(xN.begin(), xN.end(), Q_ref.begin() + Ns); // Copy reference in the cost func input data
 	
 	//set Cost function
-	opt.set_min_objective(cost_function, &Q_ref);
+	OPT.set_min_objective(cost_function, &Q_ref);
 	
-
+ 
 	// Upper and Lower bounds
 	std::vector<double> lb(Ns*N);
 	std::vector<double> ub(Ns*N);
@@ -199,8 +201,8 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 		ub[Ns*i + Ns-1] = 15.0;
 		
 	}
-	opt.set_lower_bounds(lb);
-	opt.set_upper_bounds(ub);
+	OPT.set_lower_bounds(lb);
+	OPT.set_upper_bounds(ub);
 	
 	//Constraint structs
 	pos_const_struct pos_str[N*3];
@@ -214,7 +216,7 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 		for(unsigned int k = 0; k < 3; k++)
 		{
 			pos_str[i*3 + k] = {.i = i, .k = k, .N = N, .Ns = Ns, .dt = dt};
-			opt.add_equality_constraint(dynamic_constraint_position, &pos_str[i*3 + k], 1e-2);
+			OPT.add_equality_constraint(dynamic_constraint_position, &pos_str[i*3 + k], 1e-2);
 		}
 	}
 	
@@ -224,7 +226,7 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 		for(unsigned int k = 3; k < 6; k++)
 		{
 			vel_str[i*3 + k - 3] = {.i = i, .k = k, .N = N, .Ns = Ns, .dt = dt, .psi = psi};
-			opt.add_equality_constraint(dynamic_constraint_velocity, &vel_str[i*3 + k - 3], 1e-2);
+			OPT.add_equality_constraint(dynamic_constraint_velocity, &vel_str[i*3 + k - 3], 1e-2);
 		}
 	}
 	
@@ -233,7 +235,7 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 	{
 		// std::cout << "end point definition: i: " << i << std::endl;
 		ep_str[i] = {.i = i, .x = x0[i]};
-		opt.add_equality_constraint(end_point_constraints, &ep_str[i], 1e-2);
+		OPT.add_equality_constraint(end_point_constraints, &ep_str[i], 1e-2);
 		
 		// std::cout << "end point definition: (Ns*(N-1) + i): " << (Ns*(N-1) + i) << std::endl;
 		// ep_str[2*i] = {.i = (Ns*(N-1) + i), .x = xN[i]};
@@ -243,13 +245,13 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 	
 	//State vector
 	// std::vector<double> x(Ns*N);
-	opt.set_xtol_rel(1e-2);
+	OPT.set_xtol_rel(1e-2);
 	double minf;
  
 	try
 	{
 		// std::cout << "Optimization started..." << std::endl;
-		opt.optimize(sol_x, minf);
+		OPT.optimize(sol_x, minf);
 		return EXIT_SUCCESS;
 	}
 	catch(std::exception &e) 

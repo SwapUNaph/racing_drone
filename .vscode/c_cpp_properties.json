@@ -1,0 +1,27 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/swapneel/ADR/umd_adr_simulator_ws/devel/include/**",
+                "/home/swapneel/ADR/ADR_ws/devel/include/**",
+                "/opt/ros/kinetic/include/**",
+                "/home/swapneel/ADR/umd_adr_simulator_ws/src/ardrone_autonomy/include/**",
+                "/home/swapneel/ADR/ADR_ws/src/auto_drone/include/**",
+                "/home/swapneel/ADR/umd_adr_simulator_ws/src/ardrone_simulator_gazebo7/cvg_sim_gazebo_plugins/include/**",
+                "/home/swapneel/ADR/umd_adr_simulator_ws/src/ardrone_simulator_gazebo7/cvg_sim_msgs/include/**",
+                "/home/swapneel/ADR/ADR_ws/src/racing_drone/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}

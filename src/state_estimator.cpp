@@ -59,8 +59,8 @@ int main(int argc, char **argv)
 	  // Main loop.
 	  while (estimator.nh.ok())
 	  {
-		estimator.publishOdometry();
 		ros::spinOnce();
+		estimator.publishOdometry();
 		rosRate.sleep();
 	  }
 

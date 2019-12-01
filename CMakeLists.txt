@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 2.8.3)
 project(racing_drone)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
+add_compile_options(-lnlopt)
+add_compile_options(-lm)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -123,17 +125,31 @@ catkin_package(
 include_directories(
  include
   ${catkin_INCLUDE_DIRS}
+  /usr/local/include
 )
 
 ## Declare a C++ library
  add_library(state_estimator_core
-   include/racing_drone/state_estimator_core.cpp
+   src/state_estimator_core.cpp
  )
  
  add_library(kalman_filter
-   include/racing_drone/KalmanFilter.cpp
+   src/KalmanFilter.cpp
  )
- 
+
+ add_library(controller_core
+   src/controller_core.cpp
+ ) 
+
+ add_library(mpc
+   src/MPC.cpp
+ )
+
+ #add_library(nlopt
+ #/usr/local/include/nlopt.hpp
+ #)
+
+
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -143,6 +159,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
+
  add_executable(state_estimator src/state_estimator.cpp)
  add_executable(controller src/controller.cpp)
 
@@ -161,12 +178,15 @@ include_directories(
  	state_estimator
  	state_estimator_core
  	kalman_filter
-   ${catkin_LIBRARIES}
+  ${catkin_LIBRARIES}
  )
  
   target_link_libraries(
  	controller
-   ${catkin_LIBRARIES}
+  controller_core
+  mpc
+  /usr/local/lib/libnlopt.so
+  ${catkin_LIBRARIES}
  )
 
 #############
