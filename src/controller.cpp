@@ -7,8 +7,8 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "controller");
 
   int control_loop_rate = 10;
-  int prediction_horizon = 10;
-  double prediction_time_step = 0.2;
+  int prediction_horizon = 5;
+  double prediction_time_step = 0.5;
   std::vector<double> P{ 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 0.5, 0.5, 0.5 };
   
   Controller controller(control_loop_rate, prediction_horizon, P, prediction_time_step);
@@ -19,8 +19,12 @@ int main(int argc, char **argv)
   while (controller.nh.ok())
   {
     ros::spinOnce();
+    ros::Time begin = ros::Time::now();
     controller.computeControlInput();
+    ros::Time end = ros::Time::now();
+	  double loopTime = end.toNSec() - begin.toNSec();
     controller.publishControlInput();
+    ROS_INFO( "\nControl loop time: %f ms\n", loopTime/1e6);
     r.sleep();
   }
 

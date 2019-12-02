@@ -11,6 +11,11 @@ Controller::Controller(int rt, int n, std::vector<double> p, double dt_) : rate(
 	odomSubscriber = nh.subscribe(odom_subTopic, 10, &Controller::odomCallback, this);
 	refSubscriber = nh.subscribe(ref_subTopic, 10, &Controller::refCallback, this);
 	cmdPublisher = nh.advertise<geometry_msgs::Twist>(pubTopic, 10);
+	geometry_msgs::Pose startPose;
+	startPose.position.z = 1.0;
+	startPose.orientation.w = 1.0;
+	refPose = startPose;
+
 }
 
 Controller::~Controller()
@@ -35,6 +40,7 @@ void Controller::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
 void Controller::refCallback(const geometry_msgs::Pose::ConstPtr& refPse)
 {
 	refPose = *refPse;
+	//ROS_INFO("Reference Pose: ")
 }
 
 void Controller::computeControlInput(void)
@@ -51,18 +57,27 @@ void Controller::computeControlInput(void)
 	tf::Matrix3x3 R(q);
 	std::vector<double> rpy(3);
 	R.getRPY(rpy[0], rpy[1], rpy[2]);
+	ROS_INFO("\nReference x: %f, y: %f, z: %f, R: %f, P: %f, Y: %f", xN[0], xN[1], xN[2], rpy[0], rpy[1], rpy[2]);
 
+	// Velocity control
 	double yaw_control = 0.5 * (rpy[2] - currState[8]);
+	double thrust = 0.5 * (xN[2] - currState[2]);
+	double pitch_moment = 5.0 * (quad_mpc.sol_x[6] - currState[6]);
+	double roll_moment = 5.0 * (quad_mpc.sol_x[7] - currState[7]);
 
-	controlInput.linear.x = quad_mpc.sol_x[6];
-	controlInput.linear.y = - quad_mpc.sol_x[7];
-	controlInput.linear.z = quad_mpc.sol_x[8];
+	controlInput.linear.x = 5.0 * quad_mpc.sol_x[6];
+	controlInput.linear.y = - 5.0 * quad_mpc.sol_x[7];
+	controlInput.linear.z = thrust;
+	// controlInput.angular.x = pitch_moment;
+	// controlInput.angular.y = roll_moment;
 	controlInput.angular.z = yaw_control;
 }
 
 void Controller::publishControlInput(void)
 {
+	
 	cmdPublisher.publish(controlInput);
-	ROS_INFO( "Control Published: theta: %f, phi: %f, T: %f, yaw: %f ", controlInput.linear.x,
-			 controlInput.linear.y, controlInput.linear.z, controlInput.angular.z);
+
+	ROS_INFO( "\nControl Published: theta: %f, phi: %f, T: %f, yaw: %f \n", controlInput.angular.x,
+			 controlInput.angular.y, controlInput.linear.z, controlInput.angular.z);
 }

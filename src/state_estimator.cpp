@@ -1,17 +1,5 @@
 #include "racing_drone/state_estimator_core.hpp"
 #include "nav_msgs/Odometry.h"
-/*--------------------------------------------------------------------
- * main()
- * Main function to set up ROS node.
- *------------------------------------------------------------------*/
-
-void odomClback(const nav_msgs::Odometry::ConstPtr& odom)
-{
-	ROS_INFO("Seq: [%d]", odom->header.seq);
-	ROS_INFO("Position-> x: [%f], y: [%f], z: [%f]", odom->pose.pose.position.x,odom->pose.pose.position.y, odom->pose.pose.position.z);
-	ROS_INFO("Orientation-> x: [%f], y: [%f], z: [%f], w: [%f]", odom->pose.pose.orientation.x, odom->pose.pose.orientation.y, odom->pose.pose.orientation.z, odom->pose.pose.orientation.w);
-	ROS_INFO("Vel-> Linear: [%f], Angular: [%f]", odom->twist.twist.linear.x,odom->twist.twist.angular.z);
-}
 
 
 int main(int argc, char **argv)
@@ -49,20 +37,17 @@ int main(int argc, char **argv)
 	b(2,2) = dt;
 	
 	KalmanFilter KF(f,b,h,q,r,x0);
-	
-	 //State-Estimator
-	 StateEstimator estimator(500.0, KF); //200 Hz 
 
-	  // Tell ROS how fast to run this node.
-	  ros::Rate rosRate(estimator.rate); 
 
-	  // Main loop.
-	  while (estimator.nh.ok())
-	  {
-		ros::spinOnce();
-		estimator.publishOdometry();
-		rosRate.sleep();
-	  }
+	//Node handles
+	ros::NodeHandle nh("");
+    ros::NodeHandle nh_private("~");
 
-	  return 0;
+	//State-Estimator
+	StateEstimator estimator(nh, nh_private, 50, KF); 
+
+	ros::MultiThreadedSpinner multiSpinner(4);
+	ROS_INFO("State-estimator initiated...");
+	ros::spin(multiSpinner);
+	return 0;
 } // end main()

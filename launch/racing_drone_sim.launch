@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!--
+<author>Swapneel Naphade</author>
+<email>snaphade@umd.edu</email>
+<version>3.0</version>
+-->
+
+<launch>
+  <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+	   <arg name="world_name" value="$(find auto_drone)/worlds/adr_track_two_gates.world"/>
+  </include>
+
+  <!-- Spawn simulated quadrotor uav -->
+  <include file="$(find cvg_sim_gazebo)/launch/spawn_quadrotor.launch" >
+    <arg name="model" value="$(find cvg_sim_gazebo)/urdf/quadrotor_sensors.urdf.xacro"/> 
+  </include>
+  
+  <!-- Launch RVIZ -->
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find auto_drone)/rviz/adr_track.rviz" />
+  
+  <!-- Launch Keyboard Teleop -->
+<!--
+  <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop"  args="-d _speed:=1000 _turn:=10"/>
+-->
+  
+  <!-- Launch controller node -->
+  <node pkg="racing_drone" type="controller" name="controller" output='screen'/>
+   
+   	     
+  <!-- Takeoff Command -->
+  <node pkg="rostopic" type="rostopic" name="rostopic" args="pub /ardrone/takeoff std_msgs/Empty --once"/>
+   
+  <!-- Launch gate_detector node -->
+<!--
+  <node pkg="auto_drone" type="gate_detection.py" name="gate_detector" output='screen'/>
+-->
+   
+</launch>

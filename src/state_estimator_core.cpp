@@ -2,17 +2,33 @@
 
 
 //--------------------- State Estimator ------------------------------------------
-StateEstimator::StateEstimator(int rt, KalmanFilter kf) : rate(rt), KF(kf)
+StateEstimator::StateEstimator(const ros::NodeHandle &node_handle,
+                                 const ros::NodeHandle &private_node_handle, 
+								 int rt, KalmanFilter kf)
+							 : nh(node_handle), pnh(private_node_handle), rate(rt), KF(kf)
+{
+	this->init();
+}
+
+void StateEstimator::init()
 {
 	std::string pubTopic = "/state_estimator/odom";
-	std::string subTopic = "/ground_truth/state";
-	odomSubscriber = nh.subscribe(subTopic, 10, &StateEstimator::odomCallback, this);
-	odomPublisher = nh.advertise<nav_msgs::Odometry>(pubTopic, 10);
+	std::string subTopic = "/slow_odom";
+	odomSubscriber = pnh.subscribe(subTopic, 5, &StateEstimator::odomCallback, this);
+	odomPublisher = pnh.advertise<nav_msgs::Odometry>(pubTopic, 5);
+	estimatorLoopTimer = pnh.createTimer(ros::Duration(1.0/rate),  &StateEstimator::estimatorLoopTimerCallback, this);
 }
 
 StateEstimator::~StateEstimator()
 {
 
+}
+
+void StateEstimator::estimatorLoopTimerCallback(const ros::TimerEvent& timerEvent)
+{
+	publishOdometry();
+	ros::Rate rate(this->rate);
+	rate.sleep();
 }
 
 void StateEstimator::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
@@ -35,7 +51,7 @@ void StateEstimator::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
 	odomOut.pose.pose.position.x = KF.X(0);
 	odomOut.pose.pose.position.y = KF.X(1);
 	odomOut.pose.pose.position.z = KF.X(2);
-
+	ROS_INFO("[StateEstimator] Odom recieved.");
 }
 
 void StateEstimator::publishOdometry(void)
@@ -44,10 +60,11 @@ void StateEstimator::publishOdometry(void)
 	u(0) = odomOut.twist.twist.linear.x;
 	u(1) = odomOut.twist.twist.linear.y;
 	u(2) = odomOut.twist.twist.linear.z;
+	//Predict next state
 	KF.predict(u);
 	odomOut.pose.pose.position.x = KF.X(0);
 	odomOut.pose.pose.position.y = KF.X(1);
 	odomOut.pose.pose.position.z = KF.X(2);
-	
 	odomPublisher.publish(odomOut);
+	ROS_INFO("[StateEstimator] Odom published.");
 }
