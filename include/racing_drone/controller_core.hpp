@@ -17,16 +17,20 @@ public:
 	ros::Subscriber refSubscriber; // Reference Input subscriber
 	ros::Subscriber odomSubscriber; // Odometery subscriber
 	ros::NodeHandle nh; // Node handle
+	std::string odomSubTopic;
+	std::string refSubTopic;
+	std::string cmdPubTopic;
 	int rate; //Control loop rate, Hz 
 	int N; //horizon_window
-	std::vector<double> P; // Ccst penalties, 9*1 vector
+	std::vector<double> P; // Cost penalties, 9*1 vector
 	MPC quad_mpc;	// Model Predictive Controller Object
 
 	geometry_msgs::Twist controlInput; // Control Input message (Twist on /cmd_vel)
 	std::vector<double> currState; //x,y,z,vx,vy,vz,roll,pitch,yaw
 	geometry_msgs::Pose refPose; // Refernce pose
 	
-	Controller(int rt, int n, std::vector<double> p, double dt_); //Controller Constructor
+	Controller(int rt, int n, std::vector<double> p, double dt_,
+			const std::string& odomTopic, const std::string& refTopic, const std::string& cmdTopic); //Controller Constructor
 	~Controller(); //Controller Destructor
 	
 	void odomCallback(const nav_msgs::Odometry::ConstPtr& odom); //Odometry Callbcak for updating current state

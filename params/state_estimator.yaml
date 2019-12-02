@@ -1,0 +1,6 @@
+state_estimator:
+  estimator_rate: 50
+  odom_pub_topic: "/state_estimator/odom"
+  odom_sub_topic: "/ground_truth/state"
+  cov_meas_noise: [ 0.1, 0.1, 0.1 ]
+  cov_process_noise: [ 0.01, 0.01, 0.01 ]

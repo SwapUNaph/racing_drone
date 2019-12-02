@@ -247,7 +247,8 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 	// std::vector<double> x(Ns*N);
 	OPT.set_xtol_rel(1e-2);
 	double minf;
- 
+	std::vector<double> tmp = sol_x;
+
 	try
 	{
 		// std::cout << "Optimization started..." << std::endl;
@@ -257,6 +258,7 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 	catch(std::exception &e) 
 	{
 		std::cout << "nlopt failed: " << e.what() << std::endl;
-		return EXIT_FAILURE;
+		sol_x = tmp;
+		return EXIT_SUCCESS;
 	}
 }

@@ -2,20 +2,18 @@
 
 
 //------------------------- Controller -------------------------------
-Controller::Controller(int rt, int n, std::vector<double> p, double dt_) : rate(rt), quad_mpc(n, p, dt_)
+Controller::Controller(int rt, int n, std::vector<double> p, double dt_,
+			const std::string& odomTopic, const std::string& refTopic, const std::string& cmdTopic)
+			 : rate(rt), quad_mpc(n, p, dt_), odomSubTopic(odomTopic), refSubTopic(refTopic), cmdPubTopic(cmdTopic)
 {
 	currState.resize(9);
-	std::string pubTopic = "/cmd_vel";
-	std::string odom_subTopic = "/ground_truth/state";
-	std::string ref_subTopic = "/controller/reference";
-	odomSubscriber = nh.subscribe(odom_subTopic, 10, &Controller::odomCallback, this);
-	refSubscriber = nh.subscribe(ref_subTopic, 10, &Controller::refCallback, this);
-	cmdPublisher = nh.advertise<geometry_msgs::Twist>(pubTopic, 10);
+	odomSubscriber = nh.subscribe(odomSubTopic, 10, &Controller::odomCallback, this);
+	refSubscriber = nh.subscribe(refSubTopic, 10, &Controller::refCallback, this);
+	cmdPublisher = nh.advertise<geometry_msgs::Twist>(cmdPubTopic, 10);
 	geometry_msgs::Pose startPose;
 	startPose.position.z = 1.0;
 	startPose.orientation.w = 1.0;
 	refPose = startPose;
-
 }
 
 Controller::~Controller()
@@ -57,13 +55,13 @@ void Controller::computeControlInput(void)
 	tf::Matrix3x3 R(q);
 	std::vector<double> rpy(3);
 	R.getRPY(rpy[0], rpy[1], rpy[2]);
-	ROS_INFO("\nReference x: %f, y: %f, z: %f, R: %f, P: %f, Y: %f", xN[0], xN[1], xN[2], rpy[0], rpy[1], rpy[2]);
+	// ROS_INFO("\nReference x: %f, y: %f, z: %f, R: %f, P: %f, Y: %f", xN[0], xN[1], xN[2], rpy[0], rpy[1], rpy[2]);
 
 	// Velocity control
 	double yaw_control = 0.5 * (rpy[2] - currState[8]);
 	double thrust = 0.5 * (xN[2] - currState[2]);
-	double pitch_moment = 5.0 * (quad_mpc.sol_x[6] - currState[6]);
-	double roll_moment = 5.0 * (quad_mpc.sol_x[7] - currState[7]);
+	// double pitch_moment = 5.0 * (quad_mpc.sol_x[6] - currState[6]);
+	// double roll_moment = 5.0 * (quad_mpc.sol_x[7] - currState[7]);
 
 	controlInput.linear.x = 5.0 * quad_mpc.sol_x[6];
 	controlInput.linear.y = - 5.0 * quad_mpc.sol_x[7];
@@ -74,10 +72,8 @@ void Controller::computeControlInput(void)
 }
 
 void Controller::publishControlInput(void)
-{
-	
+{	
 	cmdPublisher.publish(controlInput);
-
-	ROS_INFO( "\nControl Published: theta: %f, phi: %f, T: %f, yaw: %f \n", controlInput.angular.x,
-			 controlInput.angular.y, controlInput.linear.z, controlInput.angular.z);
+	// ROS_INFO( "\nControl Published: theta: %f, phi: %f, T: %f, yaw: %f \n", controlInput.linear.x,
+	// 		 controlInput.linear.y, controlInput.linear.z, controlInput.angular.z);
 }

@@ -13,12 +13,15 @@ public:
 	ros::Publisher odomPublisher;
 	ros::Subscriber odomSubscriber;
 	ros::Timer estimatorLoopTimer;
+	std::string pubTopic;
+	std::string subTopic;
 	int rate;
 	KalmanFilter KF;
 	nav_msgs::Odometry odomOut;
 	
 	StateEstimator(const ros::NodeHandle &node_handle,
-					const ros::NodeHandle &private_node_handle, 
+					const std::string& pub_topic,
+					const std::string& sub_topic,
 					int rt, KalmanFilter kf);
 	~StateEstimator();
 	
