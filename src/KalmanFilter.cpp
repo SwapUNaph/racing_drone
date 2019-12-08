@@ -72,3 +72,21 @@ void KalmanFilter::update(vector<double> y)
 	HP = prod(H, P);
 	P = P - prod(K, HP);
 }
+
+
+ExtendedKalmanFilter::ExtendedKalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h,		
+	 					 matrix<double> q, matrix<double> r,  vector<double> x0,
+						 EKFFuncType pFunc,
+						 EKFFuncType jacoF,
+						 EKFFuncType jacoB)
+		: KalmanFilter(f,b,h,q,r,x0), predictFunc_(pFunc), jacobianF_(jacoF), jacobianB_(jacoB)
+{
+
+}
+
+ExtendedKalmanFilter::~ExtendedKalmanFilter(){}
+
+vector<double> ExtendedKalmanFilter::predictEKF(vector<double> u)
+{
+	X = predictFunc_(X,u);
+}
