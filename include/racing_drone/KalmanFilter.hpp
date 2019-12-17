@@ -32,21 +32,21 @@ public:
 };
 
 
-class ExtendedKalmanFilter : public KalmanFilter
-{
-public:
-	EKFFuncType predictFunc_;
-	EKFFuncType jacobianF_;
-	EKFFuncType jacobianB_;
+// class ExtendedKalmanFilter : public KalmanFilter
+// {
+// public:
+// 	EKFFuncType predictFunc_;
+// 	EKFFuncType jacobianF_;
+// 	EKFFuncType jacobianB_;
 
-	ExtendedKalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h,		
-	 					 matrix<double> q, matrix<double> r,  vector<double> x0,
-						 EKFFuncType pFunc,
-						 EKFFuncType jacoF,
-						 EKFFuncType jacoB);
-	~ExtendedKalmanFilter();
+// 	ExtendedKalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h,		
+// 	 					 matrix<double> q, matrix<double> r,  vector<double> x0,
+// 						 EKFFuncType pFunc,
+// 						 EKFFuncType jacoF,
+// 						 EKFFuncType jacoB);
+// 	~ExtendedKalmanFilter();
 
-	void predictEKF(vector<double> u);
-	void updateEKF(vector<double> y);
-	void calculateJacobians(void);
-};
+// 	void predictEKF(vector<double> u);
+// 	void updateEKF(vector<double> y);
+// 	void calculateJacobians(void);
+// };

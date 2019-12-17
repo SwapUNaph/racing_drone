@@ -3,8 +3,8 @@ project(racing_drone)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
-add_compile_options(-lnlopt)
-add_compile_options(-lm)
+
+#set(OpenCV_DIR "/usr/local/lib/cmake/opencv4")
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -19,6 +19,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
 )
+
+find_package(OpenCV REQUIRED )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -123,7 +125,8 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
- include
+  include
+  ${OpenCV_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
   /usr/local/include
 )
@@ -145,9 +148,13 @@ include_directories(
    src/MPC.cpp
  )
 
- #add_library(nlopt
- #/usr/local/include/nlopt.hpp
- #)
+ add_library(gate_detector_class
+   src/GateDetector.cpp
+ )
+
+ add_library(gate_detector_core
+   src/gate_detector_core.cpp
+ )
 
 
 
@@ -162,6 +169,7 @@ include_directories(
 
  add_executable(state_estimator src/state_estimator.cpp)
  add_executable(controller src/controller.cpp)
+ add_executable(gate_detector src/gate_detector.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -186,6 +194,15 @@ include_directories(
   controller_core
   mpc
   /usr/local/lib/libnlopt.so
+  ${catkin_LIBRARIES}
+ )
+
+  target_link_libraries(
+  gate_detector
+  gate_detector_core
+  gate_detector_class
+  #/usr/local/lib/libopencv_videoio.so
+  ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
  )
 

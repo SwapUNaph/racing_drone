@@ -1,0 +1,11 @@
+gate_detector:
+    gateSide: 1.15
+    hsv_low_thresh: [ 0, 0, 50 ] 
+    hsv_high_thresh: [ 120, 255, 255 ]
+    blur_kernel: 5
+    area_thresh: 3000
+    aspect_ratio_low: 0.6
+    roi_mean_thresh: 50
+    cameraMatrix: [ 258.58131479, 0.0,  348.1852167,  0.0, 257.25344992, 219.07752178, 0.0, 0.0, 1.0 ]
+    distCoeffs: [ -0.36310169, 0.10981468, 0.0057042, -0.001884,  -0.01328491 ]
+    pubTopic: "/gate_detector/gatePoseWrtDrone"

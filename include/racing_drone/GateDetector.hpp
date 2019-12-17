@@ -1,6 +1,6 @@
-#include <opencv2/highgui/highgui.hpp>
+#pragma once
+
 #include <opencv2/opencv.hpp>
-#include <opencv2/core/core.hpp>
 #include <ctime>
 #include <algorithm>
 #include <vector>
@@ -14,6 +14,7 @@ bool compareContourArea(vector<Point> a, vector<Point> b);
 double aspectRatio(const vector<Point>& contour);
 vector<double> rvec2quat(vector<double> rvec);
 vector<double> quat2euler(vector<double> q);
+
 
 class GateDetector
 {
@@ -41,7 +42,7 @@ class GateDetector
                     double aspect_ratio_low_,
                     double roi_mean_thresh_,
                     Mat cameraMatrix_,
-                    Mat distCoeffs_             );
+                    Mat distCoeffs_  );
 
     ~GateDetector();
     bool detectGate(Mat& image);

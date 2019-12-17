@@ -6,7 +6,8 @@ double roiMean(vector<Point> contour, Mat image)
 }
 
 
-bool compareContourArea(vector<Point> a, vector<Point> b){
+bool compareContourArea(vector<Point> a, vector<Point> b)
+{
         return (contourArea(a) > contourArea(b));
 }
 
@@ -158,7 +159,7 @@ bool GateDetector::detectGate(Mat& image){
         return false;
 	} 
 	
-	//Sort the points starting with top left and going anti-clockwise
+	//Sort the points starting with top left and going counter-clockwise
 	Point center;
 	for(int i=0; i<4; i++)
 	{

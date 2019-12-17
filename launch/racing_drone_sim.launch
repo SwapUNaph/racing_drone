@@ -29,13 +29,16 @@
   <!-- Load parameters -->
   <rosparam command="load" file="$(find racing_drone)/params/state_estimator.yaml" />
   <rosparam command="load" file="$(find racing_drone)/params/controller.yaml" />
+  <rosparam command="load" file="$(find racing_drone)/params/gate_detector.yaml" />
   
   <!-- Launch controller node -->
   <node pkg="racing_drone" type="controller" name="controller" output='screen'/>
   
   <!-- Launch state_estimator node -->
   <node pkg="racing_drone" type="state_estimator" name="state_estimator"  output='screen'/>
-   
+
+  <!-- Launch gate_detector node -->
+  <node pkg="racing_drone" type="gate_detector" name="gate_detector"  output='screen'/>
    	     
   <!-- Takeoff Command -->
   <node pkg="rostopic" type="rostopic" name="rostopic" args="pub /ardrone/takeoff std_msgs/Empty --once"/>

@@ -259,6 +259,6 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 	{
 		std::cout << "nlopt failed: " << e.what() << std::endl;
 		sol_x = tmp;
-		return EXIT_SUCCESS;
+		return EXIT_FAILURE;
 	}
 }
