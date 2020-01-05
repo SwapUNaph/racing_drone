@@ -5,8 +5,10 @@
 #include <cmath>
 #include <nlopt.hpp>
 #include <nlopt.h>
+#include <ros/ros.h>
 
 #define PI 3.14159265359
+#define G 9.80
 
 typedef struct{
 	unsigned int i, k, N, Ns;
@@ -33,12 +35,12 @@ class MPC
     public:
         unsigned int N;  //Prediction horizon
         unsigned int Ns; //Number of states: 9
-        std::vector<double> sol_x; //Optimization State Vector
+        std::vector<double> sol_x; //Optimization State Vector -> x,y,z,vx,vy,vz,pitch,roll,thrust
         std::vector<double> P;  //Cost penalty weights
         double dt; //Prediction Time step
 
         MPC(unsigned int n, std::vector<double> p, double dt_);
         ~MPC();
 
-        int optimize(std::vector<double> x0, std::vector<double> xN, double psi);
+        int optimize(std::vector<double>& x0, std::vector<double>& xN, double& psi);
 };

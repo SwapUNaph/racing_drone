@@ -1,8 +1,8 @@
 controller:
   controller_rate: 20
-  prediction_horizon: 5
-  prediction_time_step: 0.2
-  odom_sub_topic: "/state_estimator/odom"
+  prediction_horizon: 8
+  prediction_time_step: 0.125
+  odom_sub_topic: "/ground_truth/state"
   ref_sub_topic: "/controller/reference"
   cmd_pub_topic: "/cmd_vel"
-  state_penalties: [ 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.1, 0.1, 0.1  ]
+  state_penalties: [ 1, 1, 5, 0.1, 0.1, 0.5, 0.1, 0.1, 0.1 ]

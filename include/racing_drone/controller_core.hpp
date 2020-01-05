@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <mutex>
 #include <ros/ros.h>
 #include <ros/time.h>
 #include <geometry_msgs/Twist.h>
@@ -26,8 +27,10 @@ public:
 	MPC quad_mpc;	// Model Predictive Controller Object
 
 	geometry_msgs::Twist controlInput; // Control Input message (Twist on /cmd_vel)
-	std::vector<double> currState; //x,y,z,vx,vy,vz,roll,pitch,yaw
+	std::vector<double> currState; // x,y,z,vx,vy,vz,roll,pitch,yaw
 	geometry_msgs::Pose refPose; // Refernce pose
+	std::vector<double> refState; // x,y,z,vx,vy,vz,roll,pitch,yaw
+	std::mutex state_mutex; // Mutex for locking currState access
 	
 	Controller(int rt, int n, std::vector<double> p, double dt_,
 			const std::string& odomTopic, const std::string& refTopic, const std::string& cmdTopic); //Controller Constructor
@@ -37,4 +40,8 @@ public:
 	void refCallback(const geometry_msgs::Pose::ConstPtr& refPose); // Reference Callback for updating reference Pose
 	void computeControlInput(void); // Compute Control Input by MPC optimization
 	void publishControlInput(void); // Publish Control Input 
+
+	double computeStateError(void);
+	double computeDistanceError(void);
+	double computeVelocityError(void);
 };

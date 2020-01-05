@@ -147,6 +147,10 @@ include_directories(
  add_library(mpc
    src/MPC.cpp
  )
+ 
+ add_library(pid
+   src/PID.cpp
+ )
 
  add_library(gate_detector_class
    src/GateDetector.cpp
@@ -193,6 +197,7 @@ include_directories(
  	controller
   controller_core
   mpc
+  pid
   /usr/local/lib/libnlopt.so
   ${catkin_LIBRARIES}
  )

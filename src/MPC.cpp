@@ -30,18 +30,18 @@ double dynamic_constraint_velocity(const std::vector<double> &x, std::vector<dou
 	double dt = vel_struct->dt;
 	double psi = vel_struct->psi;
 	unsigned int Ns = vel_struct->Ns;
-	double drag_term = 0.005;
+	double drag_term = 0.0;
 		
 	//std::cout << "In vel const function" << std::endl;
 	
 	switch(k)
 	{
-		case 3:
+		case 3:  // vx
 		if(!grad.empty())
 		{
 			std::fill(grad.begin(), grad.end(), 0.0);
 			grad[Ns*i+k] = -1.0;
-			grad[Ns*(i-1)+k] = 1.0 - drag_term * std::abs(x[Ns*(i-1)+k]) * dt;
+			grad[Ns*(i-1)+k] = 1.0 - 2.0 * drag_term * std::abs(x[Ns*(i-1)+k]) * dt;
 			grad[Ns*(i-1) + Ns-3] = x[Ns*(i-1) + Ns-1] * ( std::cos(x[Ns*(i-1) + Ns-2]) * std::cos(x[Ns*(i-1) + Ns-3]) * std::cos(psi) ) * dt;
 			grad[Ns*(i-1) + Ns-2] = x[Ns*(i-1) + Ns-1] * ( std::cos(x[Ns*(i-1) + Ns-2]) * std::sin(psi) - std::sin(x[Ns*(i-1) + Ns-2]) * std::sin(x[Ns*(i-1) + Ns-3]) * std::cos(psi) ) * dt;
 			grad[Ns*(i-1) + Ns-1] = ( std::sin(x[Ns*(i-1) + Ns-2]) * std::sin(psi) + std::cos(x[Ns*(i-1) + Ns-2]) * std::sin(x[Ns*(i-1) + Ns-3]) * std::cos(psi) ) * dt;
@@ -54,7 +54,7 @@ double dynamic_constraint_velocity(const std::vector<double> &x, std::vector<dou
 				);
 		break;
 		
-		case 4:
+		case 4: // vy
 		if(!grad.empty())
 		{
 			std::fill(grad.begin(), grad.end(), 0.0);
@@ -72,7 +72,7 @@ double dynamic_constraint_velocity(const std::vector<double> &x, std::vector<dou
 				);
 		break;
 		
-		case 5:
+		case 5: // vz
 		if(!grad.empty())
 		{
 			std::fill(grad.begin(), grad.end(), 0.0);
@@ -91,7 +91,7 @@ double dynamic_constraint_velocity(const std::vector<double> &x, std::vector<dou
 		break;
 		
 		default:
-		return -1;
+		return 0;
 		break;
 	}
 	
@@ -104,15 +104,13 @@ double end_point_constraints(const std::vector<double> &x, std::vector<double> &
 	end_pnt_const_struct* ep_data = reinterpret_cast<end_pnt_const_struct* >(ep_const_data);
 	unsigned int ind = ep_data->i;
 	double val = ep_data->x;
-		
-	// std::cout << "In end point const function, before grad i,k: " << ep_data->i << ", " << ep_data->x << std::endl;
 	
 	if(!grad.empty())
 	{
 		std::fill(grad.begin(), grad.end(), 0.0);
 		grad[ind] = 1.0;
 	}
-	// std::cout << "In end point const function, after grad i,k: " << ind << ", " << val << std::endl;
+
 	return x[ind] - val;
 }
 
@@ -127,13 +125,13 @@ double cost_function(const std::vector<double> &x, std::vector<double> &grad, vo
 	std::vector<double> ref(Ns);
 	std::copy(q_ref->begin(), q_ref->end() - Ns, Q.begin());
 	std::copy(q_ref->begin() + Ns, q_ref->end(), ref.begin());
-	
-	//std::cout << "In cost function" << std::endl;
-	
 	double cost = 0.0;
-	
 	unsigned int N = x.size() / Ns;
-	
+
+	// std::cout << "In MPC cost function N: " << N << ", Ns: " << Ns << std::endl;
+	// ROS_INFO("\nReference x: %f, y: %f, z: %f\n vx: %f, vy: %f, vz: %f\n R: %f, P: %f, T: %f\n", ref[0], ref[1], ref[2],
+	// 			ref[3], ref[4], ref[5], ref[6], ref[7], ref[8]);
+
 	if(!grad.empty())
 		for(unsigned int i=0; i < N; i++)
 			for(unsigned int k=0; k < Ns; k++)
@@ -143,7 +141,8 @@ double cost_function(const std::vector<double> &x, std::vector<double> &grad, vo
 		for(unsigned int k=0; k < Ns; k++)
 			cost += (x[Ns*i + k] - ref[k]) * (x[Ns*i + k] - ref[k]) * Q[k];
 	
-	// std::cout << "Cost: " << cost << std::endl;
+	cost += 500.0;
+	// std::cout << "\nCost: " << cost << std::endl;
 	return cost;
 }
 
@@ -157,7 +156,7 @@ MPC::MPC(unsigned int n, std::vector<double> p, double dt_): N(n), P(p), dt(dt_)
 
 MPC::~MPC(){}
 
-int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
+int MPC::optimize(std::vector<double>& x0, std::vector<double>& xN, double& psi)
 {
     // auto start = std::chrono::system_clock::now();
 	// unsigned int Ns = 9; //States
@@ -173,12 +172,12 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 	
 	nlopt::opt OPT(nlopt::LD_SLSQP, Ns*N);
 	
-	std::vector<double> Q_ref(2*Ns); //Penalties for states and inputs (Ns) and reference (Ns)
-	std::copy(P.begin(), P.end(), Q_ref.begin()); // Fill all penalties with P
-	std::copy(xN.begin(), xN.end(), Q_ref.begin() + Ns); // Copy reference in the cost func input data
+	std::vector<double> P_ref(2*Ns); //Penalties for states and inputs (Ns) and reference (Ns)
+	std::copy(P.begin(), P.end(), P_ref.begin()); // Fill all penalties with P
+	std::copy(xN.begin(), xN.end(), P_ref.begin() + Ns); // Copy reference in the cost func input data
 	
 	//set Cost function
-	OPT.set_min_objective(cost_function, &Q_ref);
+	OPT.set_min_objective(cost_function, &P_ref);
 	
  
 	// Upper and Lower bounds
@@ -192,13 +191,13 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 		// Input angle bounds
 		for(unsigned int k = Ns-3; k < Ns-1; k++)
 		{
-			lb[Ns*i + k] = -30.0 * PI / 180.0;
-			ub[Ns*i + k] =  30.0 * PI / 180.0;
+			lb[Ns*i + k] = -80.0 * PI / 180.0;
+			ub[Ns*i + k] =  80.0 * PI / 180.0;
 		}
 		
 		//Thrust bounds
-		lb[Ns*i + Ns-1] = 0.0;
-		ub[Ns*i + Ns-1] = 15.0;
+		lb[Ns*i + 8] = 0.0;
+		ub[Ns*i + 8] = 15.0;
 		
 	}
 	OPT.set_lower_bounds(lb);

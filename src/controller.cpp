@@ -43,13 +43,8 @@ int main(int argc, char **argv)
   while (controller.nh.ok())
   {
     ros::spinOnce();
-    ros::Time begin = ros::Time::now();
-    controller.computeControlInput();
-    ros::Time end = ros::Time::now();
-	  double loopTime = end.toNSec() - begin.toNSec();
     controller.publishControlInput();
-    ROS_INFO( "\nControl loop time: %f ms\n", loopTime/1e6);
-    conRate.sleep();
+    // conRate.sleep();
   }
 
   return 0;
