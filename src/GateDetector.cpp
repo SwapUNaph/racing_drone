@@ -1,16 +1,63 @@
+/**
+ * @file GateDetector.cpp
+ * @author Swapneel Naphade (naphadeswapneel@gmail.com)
+ * @brief GateDetector class definition
+ * @version 0.1
+ * @date 01-05-2020
+ * 
+ *  Copyright (c) 2020 Swapneel Naphade
+ * 
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ * 
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ * 
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 #include "racing_drone/GateDetector.hpp"
 
+/**
+ * @brief Calculate mean of pixel values in region of interest of an image
+ * 
+ * @param contour Vector of 4 points which make the contour for which ROI mean is calculated
+ * @param image The input image 
+ * @return double Mean of pixel values in the bounding box of the input contour on the image
+ */
 double roiMean(vector<Point> contour, Mat image)
 {
 	return mean(image(boundingRect(contour)))[0];
 }
 
-
+/**
+ * @brief Compare areas of two contours, A and B
+ * 
+ * @param a Contour A
+ * @param b Contour B
+ * @return bool Is Area of A > Area of B ?
+ */
 bool compareContourArea(vector<Point> a, vector<Point> b)
 {
         return (contourArea(a) > contourArea(b));
 }
 
+/**
+ * @brief Calcualte aspect ratio of contour
+ * 
+ * @param contour Input contour
+ * @return double Aspect Ratio of the contour (width-to-height ratio)
+ */
 double aspectRatio(const vector<Point>& contour)
 {
 	Rect boundRect( boundingRect(contour));
@@ -18,9 +65,12 @@ double aspectRatio(const vector<Point>& contour)
 }
 
 
-// Convert rotation vector to quaternion	
-// def rvec2quat(vector):
-// quat = [x,y,z,w]
+/**
+ * @brief Convert rotation vector to quaternion
+ * 
+ * @param rvec Rotation vector -> length is the angle and axis of rotation is along the vector
+ * @return Quaternion -> [x,y,z,w]
+ */
 vector<double> rvec2quat(vector<double> rvec)
 {
 	double theta=0;
@@ -41,10 +91,12 @@ vector<double> rvec2quat(vector<double> rvec)
 	return quat;
 }
 
-// Convert quaternion to euler angles (angles in radians)
-// def quat2euler(q):
-// 	q = [x,y,z,w]
-// 	euler = [roll,pitch,yaw]
+/**
+ * @brief Convert Quaternion to Euler(roll-pitch-yaw) angles
+ * 
+ * @param q Quaternion [x,y,z,w]
+ * @return rpy Roll-Pitch-Yaw [r,p,y] in radians
+ */
 vector<double> quat2euler(vector<double> q)
 {
 	vector<double> rpy(3);
@@ -54,7 +106,19 @@ vector<double> quat2euler(vector<double> q)
 	return rpy;
 }
 
-// GateDetector Class definition
+/**
+ * @brief Construct a new Gate Detector object
+ * 
+ * @param gateSide_ Side of the Square gate in meters
+ * @param hsv_low_thresh_ HSV low threashold of the gate 
+ * @param hsv_high_thresh_ HSV High threshold of the gate
+ * @param blur_kernel_ Kernel size for bluring image
+ * @param area_thresh_ Area threshold of the gate 
+ * @param aspect_ratio_low_ Aspect Ratio low threshold of the gate (between 0.01 and 1)
+ * @param roi_mean_thresh_ ROI Mean threshold
+ * @param cameraMatrix_ Camera Matrix of camera
+ * @param distCoeffs_ Distortion Coefficients of camera
+ */
 GateDetector::GateDetector( double gateSide_,
 							Scalar hsv_low_thresh_,
 							Scalar hsv_high_thresh_,
@@ -77,9 +141,19 @@ GateDetector::GateDetector( double gateSide_,
 
 }     
 
+/**
+ * @brief Destroy the Gate Detector:: Gate Detector object
+ * 
+ */
 GateDetector::~GateDetector(){}
 
-
+/**
+ * @brief Detect gate in the input image
+ * 
+ * @param image Input image for gate detection
+ * @return true If gate is successfully detected
+ * @return false If gate is not detected
+ */
 bool GateDetector::detectGate(Mat& image){
 	
     clock_t start_time = clock();
@@ -187,7 +261,12 @@ bool GateDetector::detectGate(Mat& image){
     return true;
 } 
 
-
+/**
+ * @brief Calculate gate pose  with respect to drone
+ * 
+ * @return true If gate pose is successfully calculated 
+ * @return false If gate pose is not calculated correctly
+ */
 bool GateDetector::getGatePose(void)
 {
 	//Camera matrix and distortionb coefficients

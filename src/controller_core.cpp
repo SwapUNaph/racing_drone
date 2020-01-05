@@ -1,9 +1,24 @@
+/**
+ * @file controller_core.cpp
+ * @author Swapneel Naphade (naphadeswapneel@gmail.com)
+ * @brief 
+ * @version 0.1
+ * @date 01-05-2020
+ * 
+ * @copyright Copyright (c) 2020
+ * 
+ * [License statements go here..]
+ */
+
 #include "racing_drone/controller_core.hpp"
 
 
-// Convert rotation vector to quaternion	
-// def rpy2quat(vector):
-// quat = [x,y,z,w]
+/**
+ * @brief Converts roll-pitch-yaw angles to quaternion
+ * 
+ * @param rpy rpy-vector [r,p,y] (in radians)
+ * @param quat quaternion-vector [x,y,z,w]
+ */
 void rpy2quat(const std::vector<double>& rpy, std::vector<double>& quat)
 {
 	double cy = cos(rpy[2] * 0.5);
