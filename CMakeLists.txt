@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   tf
+  cv_bridge
 )
 
 find_package(OpenCV REQUIRED )
@@ -56,11 +57,10 @@ find_package(OpenCV REQUIRED )
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+ add_message_files(
+   FILES
+   DroneState.msg
+ )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -77,10 +77,11 @@ find_package(OpenCV REQUIRED )
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   mavros_msgs#   nav_msgs#   sensor_msgs#   std_msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   geometry_msgs
+   std_msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -160,7 +161,9 @@ include_directories(
    src/gate_detector_core.cpp
  )
 
-
+ add_library(common
+   src/common.cpp
+ )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -174,6 +177,7 @@ include_directories(
  add_executable(state_estimator src/state_estimator.cpp)
  add_executable(controller src/controller.cpp)
  add_executable(gate_detector src/gate_detector.cpp)
+ add_executable(camera src/camera.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -190,6 +194,7 @@ include_directories(
  	state_estimator
  	state_estimator_core
  	kalman_filter
+  common
   ${catkin_LIBRARIES}
  )
  
@@ -198,6 +203,7 @@ include_directories(
   controller_core
   mpc
   pid
+  common
   /usr/local/lib/libnlopt.so
   ${catkin_LIBRARIES}
  )
@@ -206,10 +212,20 @@ include_directories(
   gate_detector
   gate_detector_core
   gate_detector_class
-  #/usr/local/lib/libopencv_videoio.so
+  kalman_filter
+  common
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
  )
+
+target_link_libraries(
+  camera
+  common
+  ${OpenCV_LIBS}
+  ${catkin_LIBRARIES}
+ )
+
+  
 
 #############
 ## Install ##

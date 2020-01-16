@@ -197,7 +197,7 @@ double cost_function(const std::vector<double> &x, std::vector<double> &grad, vo
 		for(unsigned int k=0; k < Ns; k++)
 			cost += (x[Ns*i + k] - ref[k]) * (x[Ns*i + k] - ref[k]) * Q[k];
 	
-	cost += 500.0;
+	// cost += 500.0;
 	// std::cout << "\nCost: " << cost << std::endl;
 	return cost;
 }
@@ -262,6 +262,7 @@ int MPC::optimize(std::vector<double>& x0, std::vector<double>& xN, double& psi)
 	std::fill(lb.begin(), lb.end(), -100.0);
 	std::fill(ub.begin(), ub.end(), 100.0);
 	
+
 	for(unsigned int i = 0; i < N; i++)
 	{
 		// Input angle bounds
@@ -273,7 +274,11 @@ int MPC::optimize(std::vector<double>& x0, std::vector<double>& xN, double& psi)
 		
 		//Thrust bounds
 		lb[Ns*i + 8] = 0.0;
-		ub[Ns*i + 8] = 15.0;
+		ub[Ns*i + 8] = 20.0;
+
+		//Altitude bounds
+		lb[Ns*i + 2] = 0.0;
+		ub[Ns*i + 2] = 4.0;
 		
 	}
 	OPT.set_lower_bounds(lb);

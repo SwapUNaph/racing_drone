@@ -27,6 +27,7 @@
  */
 
 #include "racing_drone/GateDetector.hpp"
+#include "common.cpp"
 
 /**
  * @brief Calculate mean of pixel values in region of interest of an image
@@ -64,48 +65,6 @@ double aspectRatio(const vector<Point>& contour)
 	return (double) (boundRect.width / boundRect.height);
 }
 
-
-/**
- * @brief Convert rotation vector to quaternion
- * 
- * @param rvec Rotation vector -> length is the angle and axis of rotation is along the vector
- * @return Quaternion -> [x,y,z,w]
- */
-vector<double> rvec2quat(vector<double> rvec)
-{
-	double theta=0;
-	for(int i=0; i<rvec.size(); i++)
-		theta += rvec[i]*rvec[i];
-
-	theta = sqrt(theta);
-
-	for(int i=0; i<rvec.size(); i++)
-		rvec[i] /= theta;
-
-	vector<double> quat(4);
-	quat[0] = rvec[0] * sin(theta/2.0);
-	quat[1] = rvec[1] * sin(theta/2.0);
-	quat[2] = rvec[2] * sin(theta/2.0);
-	quat[3] = cos(theta/2.0);
-
-	return quat;
-}
-
-/**
- * @brief Convert Quaternion to Euler(roll-pitch-yaw) angles
- * 
- * @param q Quaternion [x,y,z,w]
- * @return rpy Roll-Pitch-Yaw [r,p,y] in radians
- */
-vector<double> quat2euler(vector<double> q)
-{
-	vector<double> rpy(3);
-	rpy[0] = atan2( 2*(q[3]*q[0] + q[1]*q[2]), 1 - 2*(q[0]*q[0] + q[1]*q[1]) );
-	rpy[1] = asin( 2*(q[3]*q[1] - q[0]*q[2]) );
-	rpy[2] = atan2( 2*(q[3]*q[2] + q[0]*q[1]), 1 - 2*(q[1]*q[1]+ q[2]*q[2]) );
-	return rpy;
-}
-
 /**
  * @brief Construct a new Gate Detector object
  * 
@@ -138,7 +97,8 @@ GateDetector::GateDetector( double gateSide_,
 		cameraMatrix(cameraMatrix_),
 		distCoeffs(distCoeffs_ )
 {
-
+	vector<Point> zero_gate{ Point(0.0), Point(0.0), Point(0.0), Point(0.0) };
+	gateContour = zero_gate;
 }     
 
 /**
@@ -160,19 +120,22 @@ bool GateDetector::detectGate(Mat& image){
     static int frame_count;
     frame_count++;
      
+	// ROS_INFO( "before bgr2hsv " );
     // Mat hsv, mask, blur;
 	//Convert to HSV
 	cvtColor(image, image, COLOR_BGR2HSV);
 	//imshow("HSV", hsv);
-	
+
+	// ROS_INFO( "before mask " );
 	//Mask
 	inRange(image, hsv_low_thresh, hsv_high_thresh, image);
 	// imshow("MASK", mask);
 	
 	//Blur 
-	GaussianBlur(image, image, Size(blur_kernel, blur_kernel), 5, 5);
+	// GaussianBlur(image, image, Size(blur_kernel, blur_kernel), 5, 5);
 	//imshow("BLUR", blur);
 
+	// ROS_INFO( "before find contours " );
 	//Find contours
     vector<vector<Point>> contours;
     vector<Vec4i> hierarchy;
@@ -217,16 +180,18 @@ bool GateDetector::detectGate(Mat& image){
 	}
 
 	for(int i=0; i < allContours.size(); i++)
-	cout << frame_count << "[" << i << "]: " << contourArea(allContours[i]) << endl; 
+	// std::cout << frame_count << "[" << i << "]: " << contourArea(allContours[i]) << std::endl; 
 
 	vector<Point> sorted_gate(4);
 	if( allContours.size() > 0 )
 	{
+		// ROS_INFO( "Contours found." );
 		//Sort contours by area
     	sort( allContours.begin(), allContours.end(), compareContourArea );
 	}
 	else
 	{
+		// ROS_INFO( "Contours not found. Sending ZERO contour" );
 		//Send 0 contour
 		vector<Point> zero_gate{ Point(0.0), Point(0.0), Point(0.0), Point(0.0) };
 		gateContour = zero_gate;
@@ -244,6 +209,7 @@ bool GateDetector::detectGate(Mat& image){
 	center.x = center.x / 4;
 	center.y = center.y / 4;
 
+	// ROS_INFO(" before contour point sorting. ");
 	for(int i=0; i<4; i++)
 	{
 		if ( allContours[0][i].x <  center.x && allContours[0][i].y < center.y)
@@ -257,7 +223,7 @@ bool GateDetector::detectGate(Mat& image){
 	}
 				
     //Average Loop time without GPU:  0.042 s.
-    std::cout << "[" << frame_count << "]" << " Loop time: " << ((float)(clock() - start_time))/CLOCKS_PER_SEC*1000.0 << " ms." << std::endl;
+    // ROS_INFO( "[%d] Gate Detector Loop time: %.0f ms.", frame_count, ((float)(clock() - start_time))/CLOCKS_PER_SEC*1000.0 );
     return true;
 } 
 
@@ -294,9 +260,13 @@ bool GateDetector::getGatePose(void)
 
 	if ( solvePnP(objectPoints, gateControur2d, cameraMatrix, distCoeffs, rvec, tvec) )
 	{
-		
+		rvec[0] += CV_PI;
+		// ROS_INFO("rvec [cam]: %f, %f, %f", rvec[0], rvec[1], rvec[2]);
 		//Convert rotation vector to euler angles
-		rvec = quat2euler(rvec2quat(rvec));
+		std::vector<double> rpy(3);
+		quat2rpy(rvec2quat(rvec), rpy);
+		rvec = rpy;
+		// ROS_INFO("rpy [cam]: %f, %f, %f", rpy[0], rpy[1], rpy[2]);
 
 		// Vectors to matrices
 		Mat Tvec = Mat(tvec, true).reshape(1,3);
@@ -306,6 +276,7 @@ bool GateDetector::getGatePose(void)
 		Rvec = dRc*Rvec;
 		Tvec.col(0).copyTo(tvec);
 		Rvec.col(0).copyTo(rvec);
+		// ROS_INFO("rpy [drone]: %f, %f, %f", rvec[0], rvec[1], rvec[2]);
         return true;
 	}
 

@@ -1,9 +1,9 @@
 /**
- * @file state_estimator_core.hpp
+ * @file localizer.cpp
  * @author Swapneel Naphade (naphadeswapneel@gmail.com)
- * @brief state_estimator_core declaration 
+ * @brief Localizes the drone on the map using gate measurements
  * @version 0.1
- * @date 01-05-2020
+ * @date 01-15-2020
  * 
  *  Copyright (c) 2020 Swapneel Naphade
  * 
@@ -26,39 +26,11 @@
  *  SOFTWARE.
  */
 
-#pragma once
 
-#include <ros/ros.h>
-#include <ros/time.h>
-#include <nav_msgs/Odometry.h>
-#include "racing_drone/KalmanFilter.hpp"
 
-using namespace RD;
-
-class StateEstimator
+int main(int argc, char** argv)
 {
-public:
-    ros::NodeHandle nh;
-    ros::NodeHandle pnh;
-	ros::Publisher odomPublisher;
-	ros::Subscriber odomSubscriber;
-	ros::Timer estimatorLoopTimer;
-	std::string pubTopic;
-	std::string subTopic;
-	int rate;
-	KalmanFilter KF;
-	nav_msgs::Odometry odomOut;
-	
-	StateEstimator(const ros::NodeHandle &node_handle,
-					const std::string& pub_topic,
-					const std::string& sub_topic,
-					int rt, KalmanFilter kf);
-	~StateEstimator();
-	
-	void init(void);
-	void odomCallback(const nav_msgs::Odometry::ConstPtr& odom);
-	void estimatorLoopTimerCallback(const ros::TimerEvent& timerEvent);
-	void publishOdometry(void);
-};
 
 
+    return 0;
+}

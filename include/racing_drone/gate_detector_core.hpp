@@ -31,21 +31,44 @@
 #include <ros/ros.h>
 #include <ros/time.h>
 #include <geometry_msgs/Pose.h>
+#include <nav_msgs/Odometry.h>
+#include <sensor_msgs/Image.h>
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
 #include "racing_drone/GateDetector.hpp"
+#include "racing_drone/KalmanFilter.hpp"
+
+namespace ublas = boost::numeric::ublas;
 
 class GateDetectorCore
 {
     public:
         ros::NodeHandle nh;
-        ros::Publisher gatePosePub;
-        std::string pubTopic;
+        ros::Publisher rawGatePosePub;
+        ros::Publisher filteredGatePosePub;
+        ros::Subscriber odomSub;
+        ros::Subscriber imageSub;
+        std::string rawGatePubTopic;
+        std::string filteredGatePubTopic;
+        std::string odomSubTopic;
+        std::string imageTopic;
+
+        ublas::vector<double> uEKF;
+        ublas::vector<double> yEKF;
+        std::vector<double> wEKF;
 
         GateDetector gd;
-        geometry_msgs::Pose gatePose; 
+        ExtendedKalmanFilter gateEKF;
+        geometry_msgs::Pose rawGatePose; 
+        geometry_msgs::Pose filteredGatePose; 
 
-        GateDetectorCore(ros::NodeHandle &node_handle, GateDetector gd_, std::string pubTopic_);
+        GateDetectorCore(ros::NodeHandle &node_handle, GateDetector gd_, ExtendedKalmanFilter gateEKF_,
+             std::string rawGatePubTopic_, std::string filteredGatePubTopic_, std::string odomSubTopic_, std::string imageTopic_);
         ~GateDetectorCore();
 
+        void imageCallback(const sensor_msgs::Image::ConstPtr& ros_img);
+        void odomCallback(const nav_msgs::Odometry::ConstPtr& odom); 
+        
         void publishGatePose(Mat& img); 
-
 };

@@ -36,6 +36,7 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
+#include <racing_drone/DroneState.h>
 #include "MPC.hpp"
 
 class Controller
@@ -64,7 +65,7 @@ public:
 	~Controller(); //Controller Destructor
 	
 	void odomCallback(const nav_msgs::Odometry::ConstPtr& odom); //Odometry Callbcak for updating current state
-	void refCallback(const geometry_msgs::Pose::ConstPtr& refPose); // Reference Callback for updating reference Pose
+	void refCallback(const racing_drone::DroneState::ConstPtr& refDroneState); // Reference Callback for updating reference Pose
 	void computeControlInput(void); // Compute Control Input by MPC optimization
 	void publishControlInput(void); // Publish Control Input 
 

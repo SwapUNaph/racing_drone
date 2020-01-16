@@ -32,16 +32,19 @@
 #include <ctime>
 #include <algorithm>
 #include <vector>
+#include <ros/ros.h>
+#include <iostream>
+
 
 
 using namespace cv;
 using namespace std;
 
-double roiMean(vector<Point> contour, Mat image);
-bool compareContourArea(vector<Point> a, vector<Point> b);
-double aspectRatio(const vector<Point>& contour);
-vector<double> rvec2quat(vector<double> rvec);
-vector<double> quat2euler(vector<double> q);
+double roiMean(std::vector<Point> contour, Mat image);
+bool compareContourArea(std::vector<Point> a, std::vector<Point> b);
+double aspectRatio(const std::vector<Point>& contour);
+std::vector<double> rvec2quat(std::vector<double> rvec);
+std::vector<double> quat2euler(std::vector<double> q);
 
 
 class GateDetector
@@ -58,9 +61,9 @@ class GateDetector
     Mat distCoeffs;
 
 
-    vector<Point> gateContour;
-    vector<double> tvec;
-    vector<double> rvec;
+    std::vector<Point> gateContour;
+    std::vector<double> tvec;
+    std::vector<double> rvec;
 
     GateDetector(   double gateSide_,
                     Scalar hsv_low_thresh_,

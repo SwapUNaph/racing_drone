@@ -30,6 +30,25 @@
 #include "racing_drone/KalmanFilter.hpp"
 #include <iostream>
 
+bool InvertMatrix (const matrix<double>& input, matrix<double>& inverse) { 
+    // using namespace boost::numeric::ublas; 
+    typedef permutation_matrix<std::size_t> pmatrix; 
+    // create a working copy of the input 
+    matrix<double> A(input); 
+    // create a permutation matrix for the LU-factorization 
+    pmatrix pm(A.size1()); 
+    // perform LU-factorization 
+    int res = lu_factorize(A,pm); 
+    if( res != 0 )
+        return false; 
+    // create identity matrix of "inverse" 
+    inverse.assign(identity_matrix<double>(A.size1())); 
+    // backsubstitute to get the inverse 
+    lu_substitute(A, pm, inverse); 
+    return true; 
+}
+
+
 /**
  * @brief Construct a new Kalman Filter:: Kalman Filter object
  * 
@@ -40,7 +59,7 @@
  * @param r p-by-p Measurement Noise Covariance Matrix
  * @param x0 n dimensional Initial State Estimate Vector
  */
-KalmanFilter::KalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h, matrix<double> q, matrix<double> r,  vector<double> x0):
+RD::KalmanFilter::KalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h, matrix<double> q, matrix<double> r,  vector<double> x0):
 	F(f), B(b), H(h), Q(q), R(r), X(x0)
 {
 	P.resize(f.size1(), f.size2());
@@ -82,7 +101,7 @@ KalmanFilter::KalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h,
  * @brief Destroy the Kalman Filter:: Kalman Filter object
  * 
  */
-KalmanFilter::~KalmanFilter()
+RD::KalmanFilter::~KalmanFilter()
 {	
 }
 
@@ -91,7 +110,7 @@ KalmanFilter::~KalmanFilter()
  * 
  * @param u Control Input Vector
  */
-void KalmanFilter::predict(vector<double> u)
+void RD::KalmanFilter::predict(vector<double> u)
 {
 	if( std::isinf(X(0)) || std::isnan(X(0)) || std::isinf(u(0)))
 		return;
@@ -107,10 +126,10 @@ void KalmanFilter::predict(vector<double> u)
  * 
  * @param y 
  */
-void KalmanFilter::update(vector<double> y)
+void RD::KalmanFilter::update(vector<double> y)
 {
-	if( std::isinf(X(0)) || std::isnan(X(0)))
-		return;
+	// if( std::isinf(X(0)) || std::isnan(X(0)))
+	// 	return;
 		
 
 	PHt = prod(P, trans(H));
@@ -118,27 +137,48 @@ void KalmanFilter::update(vector<double> y)
 	
 	for(unsigned int i=0; i < S.size1(); ++i)
 		S_inv(i,i) = 1 / S(i,i);
-		
-	K = prod(PHt, S_inv);
-	X = X + prod(K, (y - prod(H, X)) );
-	HP = prod(H, P);
-	P = P - prod(K, HP);
+
+	if( 1 )//InvertMatrix(S, S_inv) )	//Proceed if inverse exists
+	{		
+		K = prod(PHt, S_inv);
+		X = X + prod(K, (y - prod(H, X)) );
+		HP = prod(H, P);
+		P = P - prod(K, HP);
+	}
+}
+
+void RD::KalmanFilter::filter(vector<double> u, vector<double> y)
+{
+	predict(u);
+	update(y);
 }
 
 
-// ExtendedKalmanFilter::ExtendedKalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h,		
-// 	 					 matrix<double> q, matrix<double> r,  vector<double> x0,
-// 						 EKFFuncType pFunc,
-// 						 EKFFuncType jacoF,
-// 						 EKFFuncType jacoB)
-// 		: KalmanFilter(f,b,h,q,r,x0), predictFunc_(pFunc), jacobianF_(jacoF), jacobianB_(jacoB)
-// {
+ExtendedKalmanFilter::ExtendedKalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h,		
+	 					 matrix<double> q, matrix<double> r,  vector<double> x0)
+		: RD::KalmanFilter(f,b,h,q,r,x0)
+{
+	for(int i=0; i<x0.size(); i++)
+		x0(i) = 0.0;
+}
 
-// }
+ExtendedKalmanFilter::~ExtendedKalmanFilter(){}
 
-// ExtendedKalmanFilter::~ExtendedKalmanFilter(){}
+void ExtendedKalmanFilter::calculateJacobianF(std::vector<double> w)
+{
+	F(0,0) =   1.0; F(0,1) =  w[2] / 60.0; F(0,2) = -w[1]/ 60.0;
+	F(1,0) = -w[2]/ 60.0; F(1,1) =   1.0; F(1,2) =  w[0]/ 60.0;
+	F(2,0) =  w[1]/ 60.0; F(2,1) = -w[0]/ 60.0; F(2,2) =   1.0;
+}
 
-// vector<double> ExtendedKalmanFilter::predictEKF(vector<double> u)
-// {
-// 	X = predictFunc_(X,u);
-// }
+void ExtendedKalmanFilter::filter(std::vector<double> w, vector<double> u, vector<double> y)
+{
+	calculateJacobianF(w);
+	RD::KalmanFilter::filter(u,y);
+}
+
+void ExtendedKalmanFilter::predict(std::vector<double> w, ublas::vector<double> u)
+{
+	calculateJacobianF(w);
+	RD::KalmanFilter::predict(u);
+}

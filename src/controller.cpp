@@ -64,15 +64,15 @@ int main(int argc, char **argv)
   ros::Rate conRate(controller_rate); // Tell ROS how fast to run this node.
 
   //Wait for other nodes to initialize
-  ros::Rate sleepRate(0.2);
-	sleepRate.sleep();
+  // ros::Rate sleepRate(0.2);
+	// sleepRate.sleep();
 
   // Main loop.
   while (controller.nh.ok())
   {
     ros::spinOnce();
     controller.publishControlInput();
-    // conRate.sleep();
+    conRate.sleep();
   }
 
   return 0;

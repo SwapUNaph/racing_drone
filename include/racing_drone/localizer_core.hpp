@@ -1,9 +1,9 @@
 /**
- * @file state_estimator_core.hpp
+ * @file localizer_core.hpp
  * @author Swapneel Naphade (naphadeswapneel@gmail.com)
- * @brief state_estimator_core declaration 
+ * @brief Localizer core declaration
  * @version 0.1
- * @date 01-05-2020
+ * @date 01-15-2020
  * 
  *  Copyright (c) 2020 Swapneel Naphade
  * 
@@ -26,39 +26,42 @@
  *  SOFTWARE.
  */
 
-#pragma once
-
 #include <ros/ros.h>
 #include <ros/time.h>
+#include <geometry_msgs/Pose.h>
+#include <racing_drone/DroneState.h>
 #include <nav_msgs/Odometry.h>
-#include "racing_drone/KalmanFilter.hpp"
+#include "KalmanFilter.hpp"
+#include "common.cpp"
 
-using namespace RD;
-
-class StateEstimator
+class Localizer
 {
-public:
+    public:
     ros::NodeHandle nh;
-    ros::NodeHandle pnh;
-	ros::Publisher odomPublisher;
-	ros::Subscriber odomSubscriber;
-	ros::Timer estimatorLoopTimer;
-	std::string pubTopic;
-	std::string subTopic;
-	int rate;
-	KalmanFilter KF;
-	nav_msgs::Odometry odomOut;
-	
-	StateEstimator(const ros::NodeHandle &node_handle,
-					const std::string& pub_topic,
-					const std::string& sub_topic,
-					int rt, KalmanFilter kf);
-	~StateEstimator();
-	
-	void init(void);
-	void odomCallback(const nav_msgs::Odometry::ConstPtr& odom);
-	void estimatorLoopTimerCallback(const ros::TimerEvent& timerEvent);
-	void publishOdometry(void);
+    ros::Publisher odomPublisher;
+    ros::Subscriber odomSubscriber;
+    ros::Subscriber gatePoseSubscriber;
+    std::string odomSubTopic;
+    std::string odomPubTopic;
+    std::string gatePoseTopic;
+    double measGain;
+    nav_msgs::Odometry inOdom;
+    racing_drone::DroneState outState;
+    geometry_msgs::Pose gatePoseDrone;
+    geometry_msgs::Pose gatePoseOrigin;
+
+    std::vector<racing_drone::DroneState> gates;
+    int currentGateIndex;
+
+    Localizer(ros::NodeHandle nh_, std::string odomSubTopic_, std::string odomPubTopic_, std::string gatePoseTopic,
+              double measGain_);
+    ~Localizer();
+
+    void odomSubCallback(const nav_msgs::Odometry::ConstPtr& odom);
+    void gatePoseSubCallback(const geometry_msgs::Pose::ConstPtr& gtPose);
+    void publishDroneState(void);
+    void findGate(void);
+    double getGateDistance(racing_drone::DroneState gateState);
+    void projectGatePose(void);
+
 };
-
-

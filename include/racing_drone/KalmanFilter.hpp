@@ -28,15 +28,21 @@
 
 #pragma once
 
+
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
-#include <functional>
+#include <boost/numeric/ublas/vector_proxy.hpp> 
+#include <boost/numeric/ublas/matrix.hpp> 
+#include <boost/numeric/ublas/triangular.hpp> 
+#include <boost/numeric/ublas/lu.hpp> 
+
 
 using namespace boost::numeric::ublas;
+namespace ublas = boost::numeric::ublas;
 
-typedef std::function<matrix<double> (vector<double> , vector<double> )> EKFFuncType;
-
+namespace RD
+{
 class KalmanFilter
 {
 public:
@@ -47,34 +53,31 @@ public:
 	matrix<double> Q;
 	matrix<double> R;
 	matrix<double> K;
-	vector<double> X;
+	ublas::vector<double> X;
 	matrix<double> PHt;
 	matrix<double> PFt;
 	matrix<double> HP;
 	matrix<double> S;
 	matrix<double> S_inv;
-	KalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h, matrix<double> q, matrix<double> r,  vector<double> x0);
+	KalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h, matrix<double> q, matrix<double> r,  ublas::vector<double> x0);
 	~KalmanFilter();
-	void predict(vector<double> u);
-	void update(vector<double> y);
+	void predict(ublas::vector<double> u);
+	void update(ublas::vector<double> y);
+	void filter(ublas::vector<double> u, ublas::vector<double> y);
+};
+}
+
+
+class ExtendedKalmanFilter : public RD::KalmanFilter
+{
+public:
+	ExtendedKalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h,		
+	 					 matrix<double> q, matrix<double> r,  ublas::vector<double> x0);
+
+	~ExtendedKalmanFilter();
+
+	void calculateJacobianF(std::vector<double> w);
+	void filter(std::vector<double> w, ublas::vector<double> u, ublas::vector<double> y);
+	void predict(std::vector<double> w, ublas::vector<double> u);
 };
 
-
-// class ExtendedKalmanFilter : public KalmanFilter
-// {
-// public:
-// 	EKFFuncType predictFunc_;
-// 	EKFFuncType jacobianF_;
-// 	EKFFuncType jacobianB_;
-
-// 	ExtendedKalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h,		
-// 	 					 matrix<double> q, matrix<double> r,  vector<double> x0,
-// 						 EKFFuncType pFunc,
-// 						 EKFFuncType jacoF,
-// 						 EKFFuncType jacoB);
-// 	~ExtendedKalmanFilter();
-
-// 	void predictEKF(vector<double> u);
-// 	void updateEKF(vector<double> y);
-// 	void calculateJacobians(void);
-// };

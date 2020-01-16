@@ -1,83 +1,45 @@
 /**
  * @file controller_core.cpp
  * @author Swapneel Naphade (naphadeswapneel@gmail.com)
- * @brief 
+ * @brief controller_core definition
  * @version 0.1
- * @date 01-05-2020
+ * @date 01-06-2020
  * 
- * @copyright Copyright (c) 2020
+ *  Copyright (c) 2020 Swapneel Naphade
  * 
- * [License statements go here..]
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ * 
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ * 
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
  */
 
 #include "racing_drone/controller_core.hpp"
-
+#include "common.cpp"
 
 /**
- * @brief Converts roll-pitch-yaw angles to quaternion
+ * @brief Construct a new Controller:: Controller object
  * 
- * @param rpy rpy-vector [r,p,y] (in radians)
- * @param quat quaternion-vector [x,y,z,w]
+ * @param rt Controller rate (in Hz)
+ * @param n Prediction Horizon for MPC
+ * @param p State Penalties for MPC [Qx,Qy,Qz,Qvx,Qvy,Qvz,Rpitch,Rroll,Rthrust]
+ * @param dt_ Time step for MPC (in seconds)
+ * @param odomTopic Odometry In topic (Odometry)
+ * @param refTopic Reference State topic (DroneState)
+ * @param cmdTopic Control Command Topic (Twist)
  */
-void rpy2quat(const std::vector<double>& rpy, std::vector<double>& quat)
-{
-	double cy = cos(rpy[2] * 0.5);
-    double sy = sin(rpy[2] * 0.5);
-    double cp = cos(rpy[1] * 0.5);
-    double sp = sin(rpy[1] * 0.5);
-    double cr = cos(rpy[0] * 0.5);
-    double sr = sin(rpy[0] * 0.5);
-    
-    quat[0] = cy * cp * sr - sy * sp * cr;
-    quat[1] = sy * cp * sr + cy * sp * cr;
-    quat[2] = sy * cp * cr - cy * sp * sr;
-	quat[3] = cy * cp * cr + sy * sp * sr;
-
-	return;
-}
-
-// Convert quaternion to euler angles (angles in radians)
-// def quat2rpy(q):
-// 	q = [x,y,z,w]
-// 	euler = [roll,pitch,yaw]
-void quat2rpy(const std::vector<double>& q, std::vector<double>& rpy )
-{
-	rpy[0] = atan2( 2*(q[3]*q[0] + q[1]*q[2]), 1 - 2*(q[0]*q[0] + q[1]*q[1]) );
-	rpy[1] = asin( 2*(q[3]*q[1] - q[0]*q[2]) );
-	rpy[2] = atan2( 2*(q[3]*q[2] + q[0]*q[1]), 1 - 2*(q[1]*q[1]+ q[2]*q[2]) );
-	return;
-}
-
-//Convert refPose to refState [Need to change to refOdom for velocity]
-void pose2state(const geometry_msgs::Pose& pose, std::vector<double>& refSt)
-{
-	// Position
-	refSt[0] = pose.position.x;
-	refSt[1] = pose.position.y;
-	refSt[2] = pose.position.z;
-
-	std::vector<double> quat(4), rpy(3);
-	quat[0] = pose.orientation.x;
-	quat[1] = pose.orientation.y;
-	quat[2] = pose.orientation.z;
-	quat[3] = pose.orientation.w;
-
-	quat2rpy(quat, rpy);
-
-	// Velocity
-	refSt[3] = 0.0;
-	refSt[4] = 0.0;
-	refSt[5] = 0.0;
-
-	// Orientation (euler -> radians)
-	refSt[6] = rpy[0];
-	refSt[7] = rpy[1];
-	refSt[8] = rpy[2];
-}
-
-
-
-//------------------------- Controller -------------------------------
 Controller::Controller(int rt, int n, std::vector<double> p, double dt_,
 			const std::string& odomTopic, const std::string& refTopic, const std::string& cmdTopic)
 			 : rate(rt), quad_mpc(n, p, dt_), odomSubTopic(odomTopic), refSubTopic(refTopic), cmdPubTopic(cmdTopic)
@@ -89,19 +51,25 @@ Controller::Controller(int rt, int n, std::vector<double> p, double dt_,
 	refSubscriber = nh.subscribe(refSubTopic, 10, &Controller::refCallback, this);
 	cmdPublisher = nh.advertise<geometry_msgs::Twist>(cmdPubTopic, 10);
 
-	geometry_msgs::Pose startPose;
-	startPose.position.z = 1.0;
-	startPose.orientation.w = 1.0;
-	refPose = startPose;
-	pose2state(refPose, refState);
+	std::fill(refState.begin(), refState.end(), 0.0);
+	refState[2] = 1.0;
 
 }
 
+/**
+ * @brief Destroy the Controller:: Controller object
+ * 
+ */
 Controller::~Controller()
 {
 	
 }
 
+/**
+ * @brief Callback for Odometry In, updates current state
+ * 
+ * @param odom 
+ */
 void Controller::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
 {
 	state_mutex.lock();
@@ -126,16 +94,32 @@ void Controller::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
 	state_mutex.unlock();
 }
 
-void Controller::refCallback(const geometry_msgs::Pose::ConstPtr& refPse)
+/**
+ * @brief Callback for reference state, updates reference state
+ * 
+ * @param refDroneState 
+ */
+void Controller::refCallback(const racing_drone::DroneState::ConstPtr& refDroneState)
 {
-	refPose = *refPse;
-	pose2state(refPose, refState);
+	refState[0] = refDroneState->position.x; //x
+	refState[1] = refDroneState->position.y; //y
+	refState[2] = refDroneState->position.z; //z
+	refState[3] = refDroneState->velocity.x; //vx
+	refState[4] = refDroneState->velocity.y; //vy
+	refState[5] = refDroneState->velocity.z; //vz
+	refState[6] = 0.0;						 //roll
+	refState[7] = 0.0;						 //pitch
+	refState[8] = refDroneState->yaw;		 //yaw
 
 	// ROS_INFO("\nReference x: %f, y: %f, z: %f\n vx: %f, vy: %f, vz: %f\n R: %f, P: %f, Y: %f\n", refState[0], refState[1], refState[2],
 	//  refState[3], refState[4], refState[5], refState[6], refState[7], refState[8]);
 
 }
 
+/**
+ * @brief Computes Control Input using MPC
+ * 
+ */
 void Controller::computeControlInput(void)
 {
 	// ROS_INFO("\nReference x: %f, y: %f, z: %f\n vx: %f, vy: %f, vz: %f\n R: %f, P: %f, Y: %f\n", refState[0], refState[1], refState[2],
@@ -155,8 +139,20 @@ void Controller::computeControlInput(void)
 	quad_mpc.optimize(x0, xRef, currState[8]);
 	
 
-	// Velocity control
-	double yaw_control = 0.5 * (refState[8] - currState[8]);
+	// Yaw control
+	std::vector<double> refQuat(4), currQuat(4), diffQuat(4),
+						refRPY(3), currRPY(3), diffRPY(3);
+
+	std::copy(refState.begin()+6, refState.end(), refRPY.begin());
+	std::copy(currState.begin()+6, currState.end(), currRPY.begin());
+
+	rpy2quat(refRPY, refQuat);
+	rpy2quat(currRPY, currQuat);
+
+	diffQuat = quatDifference(refQuat, currQuat);
+	quat2rpy(diffQuat, diffRPY);
+
+	double yaw_control = 1.0 * diffRPY[2];
 	double thrust = 0.2 * (refState[2] - currState[2]);
 	// double pitch_moment = 5.0 * (quad_mpc.sol_x[6] - currState[6]);
 	// double roll_moment = 5.0 * (quad_mpc.sol_x[7] - currState[7]);
@@ -172,6 +168,11 @@ void Controller::computeControlInput(void)
 
 }
 
+/**
+ * @brief Computes Euclidean distance between refState and currState
+ * 
+ * @return double state error
+ */
 double Controller::computeStateError(void)
 {
 	double error;
@@ -181,6 +182,11 @@ double Controller::computeStateError(void)
 	return sqrt(error);
 }
 
+/**
+ * @brief Computes Euclidean distance between refState position and currState position
+ * 
+ * @return double Distance error
+ */
 double  Controller::computeDistanceError(void)
 {
 	double error;
@@ -193,6 +199,11 @@ double  Controller::computeDistanceError(void)
 	return error;
 }
 
+/**
+ * @brief Computes Euclidean distance between refState velocity and currState velocity
+ * 
+ * @return double Velocity error
+ */
 double  Controller::computeVelocityError(void)
 {
 	double error;
@@ -202,13 +213,17 @@ double  Controller::computeVelocityError(void)
 	return sqrt(error);
 }
 
+/**
+ * @brief Computes and publishes control input
+ * 
+ */
 void Controller::publishControlInput(void)
 {	
 	ros::Time begin = ros::Time::now();
     computeControlInput();
     ros::Time end = ros::Time::now();
 	double loopTime = end.toNSec() - begin.toNSec();
-	ROS_INFO( "\nControl loop time: %f ms\n", loopTime/1e6);
+	ROS_INFO( "\nControl compute time: %.0f ms\n", loopTime/1e6);
 
 	cmdPublisher.publish(controlInput);
 		
