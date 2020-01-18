@@ -132,7 +132,7 @@ bool GateDetector::detectGate(Mat& image){
 	// imshow("MASK", mask);
 	
 	//Blur 
-	// GaussianBlur(image, image, Size(blur_kernel, blur_kernel), 5, 5);
+	GaussianBlur(image, image, Size(blur_kernel, blur_kernel), 5, 5);
 	//imshow("BLUR", blur);
 
 	// ROS_INFO( "before find contours " );

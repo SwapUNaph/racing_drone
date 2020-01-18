@@ -1,0 +1,15 @@
+localizer:
+
+  # Gain of gate measurements in complimentary filter (0.01 < gain < 1.0)
+  measGain: 0.2
+
+  # gates = [ x0, y0, z0, vx0, vy0, vz0, yaw0,
+  #           x1, y1, z1, vx1, vy1, vz1, yaw1,
+  #           ... ]   { yaw in radians, x y z in meters, vx vy vz in m/s (all in inertial coordinate frame)}
+  #
+  gates: [ 7.5, -0.75, 2.25, 0.0, 0.0, 0.0, 0.0, 
+          -7.5,  0.75, 2.25, 0.0, 0.0, 0.0, 3.1412 ]
+
+  odomSubTopic: "/ground_truth/state"
+  odomPubTopic: "/localizer/estimated_state"
+  gatePoseSubTopic: "/gate_detector/filtered_gate_pose"

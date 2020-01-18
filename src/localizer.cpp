@@ -26,11 +26,49 @@
  *  SOFTWARE.
  */
 
-
+#include <racing_drone/localizer_core.hpp>
 
 int main(int argc, char** argv)
 {
+    // Setup ROS
+    ros::init(argc, argv, "localizer");
+    ros::NodeHandle nh("");
 
+    // Load parameters
+    double measGain;
+    std::vector<double> gatesVec;
+    std::string odomSubTopic;
+    std::string odomPubTopic;
+    std::string gatePoseSubTopic;
+
+    ros::param::get("localizer/measGain", measGain);
+    ros::param::get("localizer/gates", gatesVec);
+    ros::param::get("localizer/odomSubTopic", odomSubTopic);
+    ros::param::get("localizer/odomPubTopic", odomPubTopic);
+    ros::param::get("localizer/gatePoseSubTopic", gatePoseSubTopic);
+
+    std::vector<racing_drone::DroneState> gates;
+    for(int i=0; i < gatesVec.size(); i+=7 )
+    {
+        racing_drone::DroneState gateState;
+        gateState.position.x = gatesVec[i];
+        gateState.position.y = gatesVec[i+1];
+        gateState.position.z = gatesVec[i+2];
+        gateState.velocity.x = gatesVec[i+3];
+        gateState.velocity.y = gatesVec[i+4];
+        gateState.velocity.z = gatesVec[i+5];
+        gateState.yaw        = gatesVec[i+6]; 
+        gates.push_back(gateState);
+    }
+
+    Localizer localizer(nh, odomSubTopic, odomPubTopic, gatePoseSubTopic, gates, measGain);
+
+    //Wait for other nodes to initialize
+    ros::Rate sleepRate(1.0);
+	sleepRate.sleep();
+    
+    ros::MultiThreadedSpinner multiSpinner(6);
+    ros::spin(multiSpinner);
 
     return 0;
 }

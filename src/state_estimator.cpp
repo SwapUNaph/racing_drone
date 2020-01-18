@@ -58,11 +58,9 @@ int main(int argc, char **argv)
 	matrix<double> h(3,3);
 	matrix<double> q(3,3);
 	matrix<double> r(3,3);
-	vector<double> x0(3);
 	double dt = 1.0/estimator_rate;
 	
 	for(int i=0; i<3; i++){
-		x0(i) = 0.0;
 		for(int j=0; j<3; j++)
 		{
 			f(i,j) = 0.0;
@@ -75,8 +73,9 @@ int main(int argc, char **argv)
 
 	for(int i=0; i<n; i++)
 	{
-		f(i,i) = 1.0;
-		h(i,i) = 1.0;
+		f(i,i) = 0.0;
+		h(i,i) = 0.0;
+		b(i,i) = 1.0;
 		q(i,i) = Q_diag[i];
 		// ROS_INFO(" q(%d,%d): %f",i,i,q(i,i));
 	} 
@@ -87,11 +86,7 @@ int main(int argc, char **argv)
 		// ROS_INFO(" r(%d,%d): %f",i,i,r(i,i));
 	} 
 	
-	b(0,0) = dt;
-	b(1,1) = dt;
-	b(2,2) = dt;
-	
-	KalmanFilter KF(f,b,h,q,r,x0);
+	KalmanFilter KF(f,b,h,q,r,dt);
 
 	//Node handles
 	ros::NodeHandle nh("");
@@ -100,11 +95,11 @@ int main(int argc, char **argv)
 	StateEstimator estimator(nh, odom_pub_topic, odom_sub_topic, estimator_rate, KF); 
 
 	//Wait for other nodes to initialize
-	ros::Rate sleepRate(0.5);
+	ros::Rate sleepRate(1.0);
 	sleepRate.sleep();
 	
 	//Multithreaded ROS spinner
-	ros::MultiThreadedSpinner multiSpinner(4);
+	ros::MultiThreadedSpinner multiSpinner(6);
 	ROS_INFO("State-estimator initiated...");
 	ros::spin(multiSpinner);
 

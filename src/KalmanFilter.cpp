@@ -59,20 +59,25 @@ bool InvertMatrix (const matrix<double>& input, matrix<double>& inverse) {
  * @param r p-by-p Measurement Noise Covariance Matrix
  * @param x0 n dimensional Initial State Estimate Vector
  */
-RD::KalmanFilter::KalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h, matrix<double> q, matrix<double> r,  vector<double> x0):
-	F(f), B(b), H(h), Q(q), R(r), X(x0)
+RD::KalmanFilter::KalmanFilter(matrix<double> a, matrix<double> b, matrix<double> h,
+				 matrix<double> q, matrix<double> r,  double dt_):
+	A(a), B(b), H(h), Q(q), R(r),dt(dt_)
 {
-	P.resize(f.size1(), f.size2());
-	K.resize(f.size1(), h.size1());
+	P.resize(A.size1(), A.size2());
+	In.resize(A.size1(), A.size2());
+	K.resize(A.size1(), H.size1());
 
 	for(unsigned int i=0; i<P.size1(); ++i)
 		P(i,i) = 100.0;
 	
-	PHt.resize(P.size1(), h.size1());
+	X.resize(A.size1());
+	X_dot.resize(A.size1());
+	F.resize(A.size1(), A.size2());
+	PHt.resize(P.size1(), H.size1());
 	PFt.resize(P.size1(), P.size1());
-	HP.resize(h.size1(), P.size2());
-	S.resize(r.size1(), r.size2());
-	S_inv.resize(r.size1(), r.size2());
+	HP.resize(H.size1(), P.size2());
+	S.resize(R.size1(), R.size2());
+	S_inv.resize(R.size1(), R.size2());
 
 	for(int i=0; i<PHt.size1(); i++)
 		for(int j=0; j<PHt.size2(); j++)
@@ -94,7 +99,20 @@ RD::KalmanFilter::KalmanFilter(matrix<double> f, matrix<double> b, matrix<double
 		for(int j=0; j<S_inv.size2(); j++)
 			S_inv(i,j) = 0.0;
 
+	for(int i=0; i<In.size1(); i++)
+		for(int j=0; j<In.size2(); j++)
+		{
+			if(i == j)
+				In(i,j) = 1.0;
+			else
+				In(i,j) = 0.0;
+			
+		}
 
+	for(int i=0; i<X.size(); i++)
+		X(i) = 0.0;
+
+	X_dot = X;
 }
 
 /**
@@ -112,13 +130,12 @@ RD::KalmanFilter::~KalmanFilter()
  */
 void RD::KalmanFilter::predict(vector<double> u)
 {
-	if( std::isinf(X(0)) || std::isnan(X(0)) || std::isinf(u(0)))
-		return;
-
-	X = prod(F, X) + prod(B, u);
-	PFt = prod(P, trans(F));
-	P = prod(F, PFt) + Q;
-
+	ublas::vector<double> X_dot_curr( prod(A, X) + prod(B, u) );
+	noalias(X) = X + (X_dot + X_dot_curr) / 2.0 * dt;
+	noalias(X_dot) = X_dot_curr;
+	noalias(F) = In + A * dt;
+	noalias(PFt) = prod(P, trans(F));
+	noalias(P) = prod(F, PFt) + Q;
 }
 
 /**
@@ -128,23 +145,16 @@ void RD::KalmanFilter::predict(vector<double> u)
  */
 void RD::KalmanFilter::update(vector<double> y)
 {
-	// if( std::isinf(X(0)) || std::isnan(X(0)))
-	// 	return;
-		
-
-	PHt = prod(P, trans(H));
-	S = prod(H, PHt) + R;
+	noalias(PHt) = prod(P, trans(H));
+	noalias(S) = prod(H, PHt) + R;
 	
 	for(unsigned int i=0; i < S.size1(); ++i)
-		S_inv(i,i) = 1 / S(i,i);
-
-	if( 1 )//InvertMatrix(S, S_inv) )	//Proceed if inverse exists
-	{		
-		K = prod(PHt, S_inv);
-		X = X + prod(K, (y - prod(H, X)) );
-		HP = prod(H, P);
-		P = P - prod(K, HP);
-	}
+		S_inv(i,i) = 1.0 / S(i,i);
+	
+	noalias(K) = prod(PHt, S_inv);
+	noalias(X) = X + prod(K, (y - prod(H, X)) );
+	noalias(HP) = prod(H, P);
+	noalias(P) = P - prod(K, HP);
 }
 
 void RD::KalmanFilter::filter(vector<double> u, vector<double> y)
@@ -154,31 +164,35 @@ void RD::KalmanFilter::filter(vector<double> u, vector<double> y)
 }
 
 
-ExtendedKalmanFilter::ExtendedKalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h,		
-	 					 matrix<double> q, matrix<double> r,  vector<double> x0)
-		: RD::KalmanFilter(f,b,h,q,r,x0)
+ExtendedKalmanFilter::ExtendedKalmanFilter(matrix<double> a, matrix<double> b, matrix<double> h,		
+	 					 matrix<double> q, matrix<double> r,  double dt_)
+		: RD::KalmanFilter(a,b,h,q,r,dt_)
 {
-	for(int i=0; i<x0.size(); i++)
-		x0(i) = 0.0;
+
 }
 
 ExtendedKalmanFilter::~ExtendedKalmanFilter(){}
 
-void ExtendedKalmanFilter::calculateJacobianF(std::vector<double> w)
+void ExtendedKalmanFilter::calculateJacobianA(std::vector<double> w)
 {
-	F(0,0) =   1.0; F(0,1) =  w[2] / 60.0; F(0,2) = -w[1]/ 60.0;
-	F(1,0) = -w[2]/ 60.0; F(1,1) =   1.0; F(1,2) =  w[0]/ 60.0;
-	F(2,0) =  w[1]/ 60.0; F(2,1) = -w[0]/ 60.0; F(2,2) =   1.0;
+	A(0,0) =   0.0; A(0,1) =  w[2];	A(0,2) = -w[1];	   // A(0,3) = -1.0;	A(0,4) =  0.0;	A(0,5) =  0.0;	
+	A(1,0) = -w[2]; A(1,1) =   0.0; A(1,2) =  w[0];	   // A(1,3) =  0.0;	A(1,4) = -1.0;	A(1,5) =  0.0;
+	A(2,0) =  w[1]; A(2,1) = -w[0]; A(2,2) =   0.0;	   // A(2,3) =  0.0;	A(2,4) =  0.0;	A(2,5) = -1.0;
+
+	// A(3,0) =   0.0; A(3,1) =   0.0;	A(3,2) =   0.0; 	A(3,3) =  0.0;	A(3,4) =  0.0;	A(3,5) =  0.0;	
+	// A(4,0) =   0.0; A(4,1) =   0.0; A(4,2) =   0.0; 	A(4,3) =  0.0;	A(4,4) =  0.0;	A(4,5) =  0.0;
+	// A(5,0) =   0.0; A(5,1) =   0.0; A(5,2) =   0.0; 	A(5,3) =  0.0;	A(5,4) =  0.0;	A(5,5) =  0.0;
+
 }
 
 void ExtendedKalmanFilter::filter(std::vector<double> w, vector<double> u, vector<double> y)
 {
-	calculateJacobianF(w);
+	calculateJacobianA(w);
 	RD::KalmanFilter::filter(u,y);
 }
 
 void ExtendedKalmanFilter::predict(std::vector<double> w, ublas::vector<double> u)
 {
-	calculateJacobianF(w);
+	calculateJacobianA(w);
 	RD::KalmanFilter::predict(u);
 }

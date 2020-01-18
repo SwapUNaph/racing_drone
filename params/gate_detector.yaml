@@ -1,7 +1,7 @@
 gate_detector:
-    gateSide: 1.0
+    gateSide: 1.5
     hsv_low_thresh: [ 0, 100, 100 ] 
-    hsv_high_thresh: [ 40, 255, 255 ]
+    hsv_high_thresh: [ 50, 255, 255 ]
     blur_kernel: 5
     area_thresh: 3000
     aspect_ratio_low: 0.6
@@ -9,11 +9,13 @@ gate_detector:
     cameraMatrix: [ 700, 0.0, 640, 0.0, 700, 360, 0.0, 0.0, 1.0 ]
     distCoeffs: [ -0.174, 0.0283, 0.0, 0.0, 0.0 ]
     meas_noise_variance: [ 0.5, 0.5, 0.5 ]
-    process_noise_variance: [ 0.01, 0.01, 0.01 ]
+    process_noise_variance: [ 0.1, 0.1, 0.1 ]
+    EKFdt: 0.030
     rawGatePubTopic: "/gate_detector/raw_gate_pose"
     filteredGatePubTopic: "/gate_detector/filtered_gate_pose"
     odomSubTopic: "/ground_truth/state"
-    imageTopic: "/ardrone/stereo/rgb/image_raw" # "none" for camera(0)
+    imageTopic: "/ardrone/stereo/rgb/image_raw" 
+    imuTopic: "/ardrone/imu"
 
     # Blue gate    
     #hsv_thresh_low = (110, 5, 100)

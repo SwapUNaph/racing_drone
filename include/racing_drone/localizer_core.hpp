@@ -29,10 +29,11 @@
 #include <ros/ros.h>
 #include <ros/time.h>
 #include <geometry_msgs/Pose.h>
+#include <std_msgs/Bool.h>
 #include <racing_drone/DroneState.h>
 #include <nav_msgs/Odometry.h>
 #include "KalmanFilter.hpp"
-#include "common.cpp"
+
 
 class Localizer
 {
@@ -41,24 +42,28 @@ class Localizer
     ros::Publisher odomPublisher;
     ros::Subscriber odomSubscriber;
     ros::Subscriber gatePoseSubscriber;
+    ros::Subscriber gateDetectionSuccess;
     std::string odomSubTopic;
     std::string odomPubTopic;
     std::string gatePoseTopic;
     double measGain;
+    double actualGain;
+    bool gdSuccess;
     nav_msgs::Odometry inOdom;
-    racing_drone::DroneState outState;
+    nav_msgs::Odometry outOdom;
     geometry_msgs::Pose gatePoseDrone;
     geometry_msgs::Pose gatePoseOrigin;
 
     std::vector<racing_drone::DroneState> gates;
-    int currentGateIndex;
+    int visualGateIndex;
 
-    Localizer(ros::NodeHandle nh_, std::string odomSubTopic_, std::string odomPubTopic_, std::string gatePoseTopic,
-              double measGain_);
+    Localizer(ros::NodeHandle nh_, std::string odomSubTopic_, std::string odomPubTopic_, std::string gatePoseTopic_,
+              std::vector<racing_drone::DroneState> gates_, double measGain_);
     ~Localizer();
 
     void odomSubCallback(const nav_msgs::Odometry::ConstPtr& odom);
     void gatePoseSubCallback(const geometry_msgs::Pose::ConstPtr& gtPose);
+    void gdSuccessCallback(const std_msgs::Bool::ConstPtr& succ);
     void publishDroneState(void);
     void findGate(void);
     double getGateDistance(racing_drone::DroneState gateState);

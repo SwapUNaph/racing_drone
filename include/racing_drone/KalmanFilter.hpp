@@ -28,7 +28,7 @@
 
 #pragma once
 
-
+#include <ros/ros.h>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
@@ -43,40 +43,45 @@ namespace ublas = boost::numeric::ublas;
 
 namespace RD
 {
-class KalmanFilter
-{
-public:
-	matrix<double> F;
-	matrix<double> B;
-	matrix<double> H;
-	matrix<double> P;
-	matrix<double> Q;
-	matrix<double> R;
-	matrix<double> K;
-	ublas::vector<double> X;
-	matrix<double> PHt;
-	matrix<double> PFt;
-	matrix<double> HP;
-	matrix<double> S;
-	matrix<double> S_inv;
-	KalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h, matrix<double> q, matrix<double> r,  ublas::vector<double> x0);
-	~KalmanFilter();
-	void predict(ublas::vector<double> u);
-	void update(ublas::vector<double> y);
-	void filter(ublas::vector<double> u, ublas::vector<double> y);
-};
+	class KalmanFilter
+	{
+	public:
+		matrix<double> A;
+		matrix<double> F;
+		matrix<double> B;
+		matrix<double> H;
+		matrix<double> P;
+		matrix<double> Q;
+		matrix<double> R;
+		matrix<double> K;
+		ublas::vector<double> X;
+		ublas::vector<double> X_dot;
+		matrix<double> PHt;
+		matrix<double> PFt;
+		matrix<double> HP;
+		matrix<double> S;
+		matrix<double> S_inv;
+		matrix<double> In;
+		double dt;
+		KalmanFilter(matrix<double> a, matrix<double> b, matrix<double> h,
+					matrix<double> q, matrix<double> r,  double dt_);
+		~KalmanFilter();
+		void predict(ublas::vector<double> u);
+		void update(ublas::vector<double> y);
+		void filter(ublas::vector<double> u, ublas::vector<double> y);
+	};
 }
 
 
 class ExtendedKalmanFilter : public RD::KalmanFilter
 {
 public:
-	ExtendedKalmanFilter(matrix<double> f, matrix<double> b, matrix<double> h,		
-	 					 matrix<double> q, matrix<double> r,  ublas::vector<double> x0);
+	ExtendedKalmanFilter(matrix<double> a, matrix<double> b, matrix<double> h,
+				 matrix<double> q, matrix<double> r,  double dt_);
 
 	~ExtendedKalmanFilter();
 
-	void calculateJacobianF(std::vector<double> w);
+	void calculateJacobianA(std::vector<double> w);
 	void filter(std::vector<double> w, ublas::vector<double> u, ublas::vector<double> y);
 	void predict(std::vector<double> w, ublas::vector<double> u);
 };

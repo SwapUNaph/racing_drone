@@ -223,7 +223,7 @@ void Controller::publishControlInput(void)
     computeControlInput();
     ros::Time end = ros::Time::now();
 	double loopTime = end.toNSec() - begin.toNSec();
-	ROS_INFO( "\nControl compute time: %.0f ms\n", loopTime/1e6);
+	ROS_INFO( "Control compute time: %.0f ms\n", loopTime/1e6);
 
 	cmdPublisher.publish(controlInput);
 		

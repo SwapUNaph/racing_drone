@@ -36,22 +36,72 @@
  * @param pubTopic_ Gate pose publication topic
  */
 GateDetectorCore::GateDetectorCore(ros::NodeHandle &node_handle, GateDetector gd_, ExtendedKalmanFilter gateEKF_,
-    std::string rawGatePubTopic_, std::string filteredGatePubTopic_, std::string odomSubTopic_, std::string imageTopic_) 
-                            :   nh(node_handle) , gd(gd_), gateEKF(gateEKF_), rawGatePubTopic(rawGatePubTopic_),
-                                 filteredGatePubTopic(filteredGatePubTopic_), odomSubTopic(odomSubTopic_), imageTopic(imageTopic_)
+             std::string rawGatePubTopic_, std::string filteredGatePubTopic_, std::string odomSubTopic_,
+             std::string imageOutTopic_, std::string imuTopic_) 
+                            :   nh(node_handle) , gd(gd_), gateEKF(gateEKF_), gateMAF(5,3), rawGatePubTopic(rawGatePubTopic_),
+                                 filteredGatePubTopic(filteredGatePubTopic_), odomSubTopic(odomSubTopic_),
+                                 imageOutTopic(imageOutTopic_), imuTopic(imuTopic_)
 {
     rawGatePosePub = nh.advertise<geometry_msgs::Pose>(rawGatePubTopic, 5);
     filteredGatePosePub = nh.advertise<geometry_msgs::Pose>(filteredGatePubTopic, 5);
+    successPub = nh.advertise<std_msgs::Bool>("/gate_detector/success", 5);
+    gateImagePub = nh.advertise<sensor_msgs::Image>("gate_detector/gate_image", 2);
 
     odomSub = nh.subscribe(odomSubTopic, 10, &GateDetectorCore::odomCallback, this);
-    imageSub = nh.subscribe(imageTopic, 2, &GateDetectorCore::imageCallback, this);
+    imageSub = nh.subscribe(imageOutTopic, 2, &GateDetectorCore::imageCallback, this);
+    imuSub = nh.subscribe(imuTopic, 2, &GateDetectorCore::imuCallback, this);
 
     uEKF.resize(3);
     wEKF.resize(3);
     yEKF.resize(3);
 
+    uEKF(0) = 0.0;
+    uEKF(1) = 0.0;
+    uEKF(2) = 0.0;
+
+    yEKF(0) = 0.0;
+    yEKF(1) = 0.0;
+    yEKF(2) = 0.0;
+    // yEKF(3) = 0.0;
+    // yEKF(4) = 0.0;
+    // yEKF(5) = 0.0;
+
+    droneQ.resize(4);
+
     rawGatePose = geometry_msgs::Pose();
     filteredGatePose = geometry_msgs::Pose();
+    success = std_msgs::Bool();
+
+    // Setup Markers
+    rawMarkerPub = nh.advertise<visualization_msgs::Marker>("/raw_gate_marker", 5);
+    filtMarkerPub = nh.advertise<visualization_msgs::Marker>("/filtered_gate_marker", 5);
+
+    rawGateMarker = visualization_msgs::Marker();
+    filtGateMarker = visualization_msgs::Marker();
+    rawGateMarker.id = 0;
+    filtGateMarker.id = 1;
+    rawGateMarker.type  = visualization_msgs::Marker::SPHERE;
+    filtGateMarker.type = visualization_msgs::Marker::SPHERE;
+    rawGateMarker.header.frame_id = "base_link";
+    filtGateMarker.header.frame_id = "base_link";
+    rawGateMarker.color.r = 255.0f;
+    rawGateMarker.color.g = 25.0f;
+    rawGateMarker.color.b = 0.0f;
+    rawGateMarker.color.a = 0.50;  
+    filtGateMarker.color.r = 0.0f;
+    filtGateMarker.color.g = 255.0f;
+    filtGateMarker.color.b = 0.0f;
+    filtGateMarker.color.a = 0.90; 
+    rawGateMarker.scale.x = 0.20;
+    rawGateMarker.scale.y = 0.20;
+    rawGateMarker.scale.z = 0.20;
+    filtGateMarker.scale.x = 0.20;
+    filtGateMarker.scale.y = 0.20;
+    filtGateMarker.scale.z = 0.20;
+    rawGateMarker.action = visualization_msgs::Marker::ADD;
+    filtGateMarker.action = visualization_msgs::Marker::ADD;
+    rawGateMarker.lifetime = ros::Duration(0.33);
+    filtGateMarker.lifetime = ros::Duration(0.33);
 
 }
 
@@ -64,23 +114,27 @@ GateDetectorCore::~GateDetectorCore(){}
 
 void GateDetectorCore::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
 {
-    // ROS_INFO( "In odom Callback." );
-    uEKF(0) = odom->twist.twist.linear.x;
-    uEKF(1) = odom->twist.twist.linear.y;
-    uEKF(2) = odom->twist.twist.linear.z;
-
-    ublas::matrix<double> bRo(3,3);
-    std::vector<double> quat(4);
-    quat[0] = odom->pose.pose.orientation.x;
-    quat[1] = odom->pose.pose.orientation.y;
-    quat[2] = odom->pose.pose.orientation.z;
-    quat[3] = odom->pose.pose.orientation.w;
-    
-    uEKF = rotateVec(quat, uEKF); //Velocity in body frame
-
     wEKF[0] = odom->twist.twist.angular.x;
     wEKF[1] = odom->twist.twist.angular.y;
     wEKF[2] = odom->twist.twist.angular.z;
+
+    // ROS_INFO( "In odom Callback." );
+    ublas::vector<double> body_vel(3);
+    body_vel(0) = odom->twist.twist.linear.x;
+    body_vel(1) = odom->twist.twist.linear.y;
+    body_vel(2) = odom->twist.twist.linear.z; // Velocity in inertial frame
+
+    droneQ[0] = odom->pose.pose.orientation.x;
+    droneQ[1] = odom->pose.pose.orientation.y;
+    droneQ[2] = odom->pose.pose.orientation.z;
+    droneQ[3] = odom->pose.pose.orientation.w;
+    
+    uEKF = rotateVec(droneQ, body_vel); // Velocity in body frame
+
+    // uEKF(0) = body_vel(0);
+    // uEKF(1) = body_vel(1);
+    // uEKF(2) = body_vel(2);  // Measure drone velocity in body frame
+
 }
 
 /**
@@ -90,9 +144,12 @@ void GateDetectorCore::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
  */
 void GateDetectorCore::publishGatePose(Mat& img)
 {
+    Mat imgCopy;
+    img.copyTo(imgCopy);
     // ROS_INFO( " before detectgate ");
     bool GATE_DETECTION_SUCCESS = gd.detectGate(img);
     bool GATE_POSE_SUCCESS = false;
+    
 
     // ROS_INFO( " before get gate pose ");
     if( GATE_DETECTION_SUCCESS)
@@ -112,6 +169,8 @@ void GateDetectorCore::publishGatePose(Mat& img)
         yEKF(0) = gd.tvec[0];
         yEKF(1) = gd.tvec[1];
         yEKF(2) = gd.tvec[2];
+
+        yEKF = gateMAF.update(yEKF);
         gateEKF.filter(wEKF, uEKF, yEKF);
         filteredGatePose.position.x = gateEKF.X(0);
         filteredGatePose.position.y = gateEKF.X(1);
@@ -122,16 +181,25 @@ void GateDetectorCore::publishGatePose(Mat& img)
         filteredGatePose.orientation.w = gateQ[3];
 
         rawGatePosePub.publish(rawGatePose);
+        success.data = true;
+        drawContours(imgCopy, std::vector<std::vector<Point>>(1,gd.gateContour), -1, Scalar(255,0,0), 4, 8);
     }
     else
     {
         gateEKF.predict(wEKF, uEKF);
         filteredGatePose.position.x = gateEKF.X(0);
         filteredGatePose.position.y = gateEKF.X(1);
-        filteredGatePose.position.z = gateEKF.X(2);   
+        filteredGatePose.position.z = gateEKF.X(2);
+        success.data = false;  
     }
     
     filteredGatePosePub.publish(filteredGatePose);
+    successPub.publish(success);
+
+    cv_bridge::CvImage cvImg;
+    cvImg.encoding = "bgr8";
+    cvImg.image = imgCopy;
+    gateImagePub.publish(cvImg.toImageMsg());
     
 }
 
@@ -139,11 +207,44 @@ void GateDetectorCore::imageCallback(const sensor_msgs::Image::ConstPtr& ros_img
 {
     cv_bridge::CvImagePtr cv_ptr;
     cv_ptr = cv_bridge::toCvCopy(ros_img, sensor_msgs::image_encodings::BGR8);
-    // ros::Time begin = ros::Time::now();
+
+    ros::Time begin = ros::Time::now();
+
     publishGatePose(cv_ptr->image);
-    // ros::Time end = ros::Time::now();
-    // double loopTime = end.toNSec() - begin.toNSec();
-    // ROS_INFO("Gate detector loop time: %f ms\n", loopTime/1e6);
+
+    ros::Time end = ros::Time::now();
+    double loopTime = end.toNSec() - begin.toNSec();
+    ROS_INFO("Gate detector loop time: %.0f ms\n", loopTime/1e6);
+
+    publishMarkers();
+}
+
+void GateDetectorCore::imuCallback(const sensor_msgs::Imu::ConstPtr& imu)
+{
+
+    // ublas::vector<double> gravity(3);
+    // gravity(0) = 0.0;
+    // gravity(1) = 0.0;
+    // gravity(2) = -9.8; // gravity in inertial frame
+
+    // gravity = rotateVec( quatConjugate(droneQ), gravity); // gravity in body frame
+
+    // uEKF(0) = imu->linear_acceleration.x + gravity(0);
+    // uEKF(1) = imu->linear_acceleration.y + gravity(1);
+    // uEKF(2) = imu->linear_acceleration.z + gravity(2);
+
+}
+
+void GateDetectorCore::publishMarkers(void)
+{
+    rawGateMarker.pose = rawGatePose;
+    rawGateMarker.header.stamp = ros::Time::now();
+
+    filtGateMarker.pose = filteredGatePose;
+    filtGateMarker.header.stamp = ros::Time::now();
+
+    rawMarkerPub.publish(rawGateMarker);
+    filtMarkerPub.publish(filtGateMarker);
 }
 
 

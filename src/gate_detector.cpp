@@ -49,10 +49,12 @@ int main(int argc, char **argv)
   std::vector<double> distCoeffs;
   std::vector<double> mnVar;
   std::vector<double> pnVar;
+  double dt;
   std::string rawGatePubTopic;
   std::string filteredGatePubTopic;
   std::string odomSubTopic;
   std::string imageTopic;
+  std::string imuTopic;
 
   ros::param::get("gate_detector/gateSide", gateSide);
   ros::param::get("gate_detector/hsv_low_thresh", hsv_low_thresh);
@@ -65,10 +67,12 @@ int main(int argc, char **argv)
   ros::param::get("gate_detector/distCoeffs", distCoeffs);
   ros::param::get("gate_detector/meas_noise_variance", mnVar);
   ros::param::get("gate_detector/process_noise_variance", pnVar);
+  ros::param::get("gate_detector/EKFdt", dt);
   ros::param::get("gate_detector/rawGatePubTopic", rawGatePubTopic);
   ros::param::get("gate_detector/filteredGatePubTopic", filteredGatePubTopic);
   ros::param::get("gate_detector/odomSubTopic", odomSubTopic);
   ros::param::get("gate_detector/imageTopic", imageTopic);
+  ros::param::get("gate_detector/imuTopic", imuTopic);
 
   // ROS_INFO("[Gate_detector] gateSide: %f m", gateSide);
   // ROS_INFO("[Gate_detector] hsv_low_thresh: %d, %d, %d", hsv_low_thresh[0], hsv_low_thresh[1], hsv_low_thresh[2] );
@@ -97,33 +101,22 @@ int main(int argc, char **argv)
                     distCoef   );
 
   //EKF Instantiation
-    ublas::matrix<double> f(3,3);
+    ublas::matrix<double> a(3,3);
     ublas::matrix<double> b(3,3);
     ublas::matrix<double> h(3,3);
     ublas::matrix<double> q(3,3);
     ublas::matrix<double> r(3,3);
-    ublas::vector<double> x0(3);
-    double dt = 1.0 / 60.0;
 
     for(int i=0; i<3; i++)
     for(int j=0; j<3; j++)
-    {
-        if(i == j)
-          f(i,j) = 1.0;
-        else
-          f(i,j) = 0.0;
-        
-    }
+          a(i,j) = 0.0;
 
-    for(int i=0; i<3; i++)
-    for(int j=0; j<3; j++)
-    {
-        if(i == j)
-          b(i,j) = -1.0 * dt;
-        else
-          b(i,j) = 0.0;
-        
-    }
+    b(0,0) = -1.0;  b(0,1) = 0.0;  b(0,2) = 0.0;     
+    b(1,0) = 0.0;  b(1,1) = -1.0;  b(1,2) = 0.0;     
+    b(2,0) = 0.0;  b(2,1) = 0.0;  b(2,2) = -1.0;     
+    // b(3,0) = 1.0;  b(3,1) = 0.0;  b(3,2) = 0.0;     
+    // b(4,0) = 0.0;  b(4,1) = 1.0;  b(4,2) = 0.0;     
+    // b(5,0) = 0.0;  b(5,1) = 0.0;  b(5,2) = 1.0;     
 
     for(int i=0; i<3; i++)
     for(int j=0; j<3; j++)
@@ -155,19 +148,17 @@ int main(int argc, char **argv)
         
     }
 
-  ExtendedKalmanFilter gEKF(f,b,h,q,r,x0);
+  ExtendedKalmanFilter gEKF(a,b,h,q,r,dt);
 
-  GateDetectorCore gateDetectorNode(nh, gd, gEKF, rawGatePubTopic, filteredGatePubTopic, odomSubTopic, imageTopic);
-
-  ros::Rate gdRate(100); // Tell ROS how fast to run this node.
+  GateDetectorCore gateDetectorNode(nh, gd, gEKF, rawGatePubTopic, filteredGatePubTopic, odomSubTopic, imageTopic, imuTopic);
 
   //Wait for other nodes to initialize
-  ros::Rate sleepRate(0.2);
+  ros::Rate sleepRate(1.0);
 	sleepRate.sleep();
 
 
   //Multithreaded ROS spinner
-  ros::MultiThreadedSpinner multi(4);
+  ros::MultiThreadedSpinner multi(6);
 	ROS_INFO("Gate-detector initiated...");
   ros::spin(multi);
 

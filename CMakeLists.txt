@@ -133,6 +133,10 @@ include_directories(
 )
 
 ## Declare a C++ library
+ add_library(common
+   src/common.cpp
+ )
+ 
  add_library(state_estimator_core
    src/state_estimator_core.cpp
  )
@@ -149,6 +153,9 @@ include_directories(
    src/MPC.cpp
  )
  
+add_library(maf
+   src/MovAvgFilter.cpp
+ )
  add_library(pid
    src/PID.cpp
  )
@@ -161,9 +168,11 @@ include_directories(
    src/gate_detector_core.cpp
  )
 
- add_library(common
-   src/common.cpp
+  add_library(localizer_core
+   src/localizer_core.cpp
  )
+
+
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -175,9 +184,14 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 
  add_executable(state_estimator src/state_estimator.cpp)
+
  add_executable(controller src/controller.cpp)
+
  add_executable(gate_detector src/gate_detector.cpp)
+
  add_executable(camera src/camera.cpp)
+
+ add_executable(localizer src/localizer.cpp) 
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -209,10 +223,18 @@ include_directories(
  )
 
   target_link_libraries(
+ 	localizer
+  localizer_core
+  common
+  ${catkin_LIBRARIES}
+  )
+
+  target_link_libraries(
   gate_detector
   gate_detector_core
   gate_detector_class
   kalman_filter
+  maf
   common
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
