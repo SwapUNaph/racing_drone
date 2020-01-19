@@ -211,10 +211,20 @@ double cost_function(const std::vector<double> &x, std::vector<double> &grad, vo
  * @param p State and Control Input penalties (1-by-9 vector)
  * @param dt_ Time step (in seconds)
  */
-MPC::MPC(unsigned int n, std::vector<double> p, double dt_): N(n), P(p), dt(dt_)
+MPC::MPC(unsigned int n, std::vector<double> p, double dt_, double maxAng, double maxThrust)
+		: N(n), P(p), dt(dt_), max_angle(std::abs(maxAng)), max_thrust_accel(std::abs(maxThrust))
 {
     Ns = 9;
     sol_x.resize(N*Ns);
+
+	if( max_thrust_accel > 25 )
+		max_thrust_accel = 25;
+	
+	if( max_thrust_accel < 10 )
+		max_thrust_accel = 10;
+
+	if( max_angle > 85 )
+		max_angle = 85;
 }
 
 /**
@@ -268,17 +278,17 @@ int MPC::optimize(std::vector<double>& x0, std::vector<double>& xN, double& psi)
 		// Input angle bounds
 		for(unsigned int k = Ns-3; k < Ns-1; k++)
 		{
-			lb[Ns*i + k] = -80.0 * PI / 180.0;
-			ub[Ns*i + k] =  80.0 * PI / 180.0;
+			lb[Ns*i + k] = -max_angle * PI / 180.0;
+			ub[Ns*i + k] =  max_angle * PI / 180.0;
 		}
 		
 		//Thrust bounds
 		lb[Ns*i + 8] = 0.0;
-		ub[Ns*i + 8] = 20.0;
+		ub[Ns*i + 8] = max_thrust_accel;
 
 		//Altitude bounds
 		lb[Ns*i + 2] = 0.0;
-		ub[Ns*i + 2] = 4.0;
+		ub[Ns*i + 2] = 5.0;
 		
 	}
 	OPT.set_lower_bounds(lb);

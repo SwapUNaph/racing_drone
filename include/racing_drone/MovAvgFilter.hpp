@@ -47,4 +47,5 @@ class MovAvgFilter
     MovAvgFilter(int win_, int n_);
     ~MovAvgFilter();
     ublas::vector<double> update(ublas::vector<double>& inVec);
+    void reset(void);
 };

@@ -40,9 +40,9 @@
  * @param refTopic Reference State topic (DroneState)
  * @param cmdTopic Control Command Topic (Twist)
  */
-Controller::Controller(int rt, int n, std::vector<double> p, double dt_,
+Controller::Controller(int rt, int n, std::vector<double> p, double dt_, double maxAng_, double maxThrust_,
 			const std::string& odomTopic, const std::string& refTopic, const std::string& cmdTopic)
-			 : rate(rt), quad_mpc(n, p, dt_), odomSubTopic(odomTopic), refSubTopic(refTopic), cmdPubTopic(cmdTopic)
+			 : rate(rt), quad_mpc(n, p, dt_, maxAng_, maxThrust_), odomSubTopic(odomTopic), refSubTopic(refTopic), cmdPubTopic(cmdTopic)
 {
 	currState.resize(9);
 	refState.resize(9);

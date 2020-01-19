@@ -60,7 +60,7 @@ public:
 	std::vector<double> refState; // x,y,z,vx,vy,vz,roll,pitch,yaw
 	std::mutex state_mutex; // Mutex for locking currState access
 	
-	Controller(int rt, int n, std::vector<double> p, double dt_,
+	Controller(int rt, int n, std::vector<double> p, double dt_, double maxAng_, double maxThrust_,
 			const std::string& odomTopic, const std::string& refTopic, const std::string& cmdTopic); //Controller Constructor
 	~Controller(); //Controller Destructor
 	

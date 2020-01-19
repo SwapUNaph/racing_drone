@@ -47,7 +47,7 @@ MovAvgFilter::~MovAvgFilter(){}
 ublas::vector<double> MovAvgFilter::update(ublas::vector<double>& inVec)
 {
     input = inVec;  
-    if( valQ.size() == window )
+    if( valQ.size() >= window )
     {
         sumVec -= valQ.front();
         valQ.pop();
@@ -59,7 +59,20 @@ ublas::vector<double> MovAvgFilter::update(ublas::vector<double>& inVec)
     if(valQ.size() != 0)
         output = sumVec / valQ.size();
 
-    std::cout << "Input: " << input << ", Output: " << output << std::endl;
-    
+    // std::cout << "Input: " << input << ", Output: " << output << std::endl;
+
     return output;
+}
+
+void MovAvgFilter::reset(void)
+{
+    for(int i=0; i<n; i++)
+    {
+        input(i) = 0.0;
+        output(i) = 0.0;
+        sumVec(i) = 0.0;
+    }
+
+    while( !valQ.empty() )
+        valQ.pop();
 }

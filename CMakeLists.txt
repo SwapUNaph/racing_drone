@@ -170,7 +170,12 @@ add_library(maf
 
   add_library(localizer_core
    src/localizer_core.cpp
- )
+  )
+
+  add_library(state_machine_core
+  src/state_machine_core.cpp
+  )
+
 
 
 
@@ -192,6 +197,8 @@ add_library(maf
  add_executable(camera src/camera.cpp)
 
  add_executable(localizer src/localizer.cpp) 
+
+ add_executable(state_machine src/state_machine.cpp) 
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -246,6 +253,14 @@ target_link_libraries(
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
  )
+
+target_link_libraries(
+  state_machine
+  state_machine_core
+  common
+  ${catkin_LIBRARIES}
+ )
+
 
   
 

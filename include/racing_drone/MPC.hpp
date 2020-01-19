@@ -66,8 +66,10 @@ class MPC
         std::vector<double> sol_x; //Optimization State Vector -> x,y,z,vx,vy,vz,pitch,roll,thrust
         std::vector<double> P;  //Cost penalty weights
         double dt; //Prediction Time step
+        double max_angle;
+        double max_thrust_accel;
 
-        MPC(unsigned int n, std::vector<double> p, double dt_);
+        MPC(unsigned int n, std::vector<double> p, double dt_, double maxAng, double maxThrust);
         ~MPC();
 
         int optimize(std::vector<double>& x0, std::vector<double>& xN, double& psi);
