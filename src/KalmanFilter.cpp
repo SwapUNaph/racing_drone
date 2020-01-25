@@ -196,3 +196,9 @@ void ExtendedKalmanFilter::predict(std::vector<double> w, ublas::vector<double> 
 	calculateJacobianA(w);
 	RD::KalmanFilter::predict(u);
 }
+
+void ExtendedKalmanFilter::update(std::vector<double> w, ublas::vector<double> y)
+{
+	calculateJacobianA(w);
+	RD::KalmanFilter::update(y);
+}

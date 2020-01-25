@@ -46,6 +46,7 @@ StateMachine::StateMachine(ros::NodeHandle& nh_, std::string controlRefPubTopic_
 
     start_time = ros::Time::now();
     time_elapsed = 0;
+    lap_time = 0;
     curr_drone_state = racing_drone::DroneState();
 
     autonomy = true;
@@ -82,6 +83,7 @@ void StateMachine::updateState(void)
 {
     ros::Time time_now = ros::Time::now();
     time_elapsed = (time_now.toNSec() - start_time.toNSec()) / 1e9 ;
+    lap_time = (time_now.toNSec() - start_lap_time.toNSec()) / 1e9 ;
     updateStateError();
 
     bool STATE_CHANGE = false;
@@ -94,11 +96,13 @@ void StateMachine::updateState(void)
         if( time_elapsed > state.change_threshold )
             STATE_CHANGE = true;
 
-    if ( STATE_CHANGE )
+    if( time_elapsed > 5.0 )    // If time in state is more than 5s then change state
+        STATE_CHANGE = true;
+
+    if( state.id == 1 && time_elapsed < 0.1)
     {
-        state = states[state.next_state_id];
-        start_time = ros::Time::now();
-        time_elapsed = 0.0;
+        lap_time = 0.0;
+        start_lap_time = ros::Time::now();
     }
 
     if( autonomy )
@@ -109,8 +113,18 @@ void StateMachine::updateState(void)
     else
     {
         // disable controller
-        controlRefPub.publish(states[0].des_state);
+        if( STATE_CHANGE )
+            STATE_CHANGE = false;
     }
+
+    if ( STATE_CHANGE )
+    {
+        state = states[state.next_state_id];
+        start_time = ros::Time::now();
+        time_elapsed = 0.0;
+    }
+
+
 
 }
 
@@ -130,4 +144,5 @@ void StateMachine::updateStateError(void)
     state_error =  dist_error; //+ 2.0 * yaw_error;
 
     ROS_INFO( "Current State id: %d, State Error: %.2f, Time Elapsed: %.3f, Autonomy: %d", state.id, state_error, time_elapsed, autonomy );
+    ROS_INFO( "Lap Time: %.3f s", lap_time);
 }

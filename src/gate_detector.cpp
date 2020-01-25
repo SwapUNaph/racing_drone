@@ -49,7 +49,7 @@ int main(int argc, char **argv)
   std::vector<double> distCoeffs;
   std::vector<double> mnVar;
   std::vector<double> pnVar;
-  double dt;
+  double EKFrate;
   std::string rawGatePubTopic;
   std::string filteredGatePubTopic;
   std::string odomSubTopic;
@@ -67,12 +67,13 @@ int main(int argc, char **argv)
   ros::param::get("gate_detector/distCoeffs", distCoeffs);
   ros::param::get("gate_detector/meas_noise_variance", mnVar);
   ros::param::get("gate_detector/process_noise_variance", pnVar);
-  ros::param::get("gate_detector/EKFdt", dt);
+  ros::param::get("gate_detector/EKFrate", EKFrate);
   ros::param::get("gate_detector/rawGatePubTopic", rawGatePubTopic);
   ros::param::get("gate_detector/filteredGatePubTopic", filteredGatePubTopic);
   ros::param::get("gate_detector/odomSubTopic", odomSubTopic);
   ros::param::get("gate_detector/imageTopic", imageTopic);
   ros::param::get("gate_detector/imuTopic", imuTopic);
+
 
   // ROS_INFO("[Gate_detector] gateSide: %f m", gateSide);
   // ROS_INFO("[Gate_detector] hsv_low_thresh: %d, %d, %d", hsv_low_thresh[0], hsv_low_thresh[1], hsv_low_thresh[2] );
@@ -148,7 +149,7 @@ int main(int argc, char **argv)
         
     }
 
-  ExtendedKalmanFilter gEKF(a,b,h,q,r,dt);
+  ExtendedKalmanFilter gEKF(a,b,h,q,r, 1.0 / EKFrate);
 
   GateDetectorCore gateDetectorNode(nh, gd, gEKF, rawGatePubTopic, filteredGatePubTopic, odomSubTopic, imageTopic, imuTopic);
 

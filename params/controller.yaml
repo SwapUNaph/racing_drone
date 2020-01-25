@@ -1,10 +1,10 @@
 controller:
-  controller_rate: 100
+  controller_rate: 1000
   prediction_horizon: 5
   prediction_time_step: 0.4
   odom_sub_topic: "/localizer/estimated_state"
   ref_sub_topic: "/controller/reference"
   cmd_pub_topic: "/cmd_vel"
-  state_penalties: [ 1, 1, 5, 1, 1, 1, 0.1, 0.1, 0.01 ]
-  max_angle: 30 # Angle in degrees (0 < max_angle < 85)
-  max_thrust: 15 # Thrust acceleration (10 < max_thrust < 25)
+  state_penalties: [ 1, 1, 5, 1, 1, 0.1, 0.001, 0.001, 0.05 ]
+  max_angle: 80 # Angle in degrees (0 < max_angle < 85)
+  max_thrust: 30 # Thrust acceleration (10 < max_thrust < 50 (~5g))

@@ -37,32 +37,59 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "state_machine");
     ros::NodeHandle nh;
 
-    std::vector<racing_drone::DroneState> des_states(50);
-    des_states[0].position.x = 0.0;     des_states[0].position.y = 0.0;     des_states[0].position.z = 2.25;         des_states[0].velocity.x = 0.0;      des_states[0].velocity.y = 0.0;         des_states[0].velocity.z = 0.0;         des_states[0].yaw = 0.0;
-    des_states[1].position.x = 4.0;     des_states[1].position.y = -0.75;     des_states[1].position.z = 2.25;        des_states[1].velocity.x = 1.0;      des_states[1].velocity.y = 0.0;         des_states[1].velocity.z = 0.0;         des_states[1].yaw = 0.0;
-    des_states[2].position.x = 7.5;     des_states[2].position.y = -0.75;     des_states[2].position.z = 2.25;         des_states[2].velocity.x = 1.0;      des_states[2].velocity.y = 0.0;         des_states[2].velocity.z = 0.0;         des_states[2].yaw = 0.0;
-    des_states[3].position.x = 9.0;     des_states[3].position.y = -0.75;     des_states[3].position.z = 2.25;         des_states[3].velocity.x = 0.0;      des_states[3].velocity.y = 0.0;         des_states[3].velocity.z = 0.0;         des_states[3].yaw = PI;
-    des_states[4].position.x = 9.0;     des_states[4].position.y = 1.0;     des_states[4].position.z = 2.25;         des_states[4].velocity.x = 0.0;      des_states[4].velocity.y = 0.0;         des_states[4].velocity.z = 0.0;         des_states[4].yaw = PI ;
-    des_states[5].position.x = 0.0;     des_states[5].position.y = 0.75;     des_states[5].position.z = 2.25;         des_states[5].velocity.x = -1.0;      des_states[5].velocity.y = 0.0;         des_states[5].velocity.z = 0.0;         des_states[5].yaw = PI ;
-    des_states[6].position.x = -4.0;     des_states[6].position.y = 0.75;     des_states[6].position.z = 2.25;         des_states[6].velocity.x = -1.0;      des_states[6].velocity.y = 0.0;         des_states[6].velocity.z = 0.0;         des_states[6].yaw = PI ;
-    des_states[7].position.x = -7.5;     des_states[7].position.y = 0.75;     des_states[7].position.z = 2.25;         des_states[7].velocity.x = -1.0;      des_states[7].velocity.y = 0.0;         des_states[7].velocity.z = 0.0;         des_states[7].yaw = PI ; 
-    des_states[8].position.x = -9.0;     des_states[8].position.y = 0.75;     des_states[8].position.z = 2.25;         des_states[8].velocity.x = 0.0;      des_states[8].velocity.y = 0.0;         des_states[8].velocity.z = 0.0;         des_states[8].yaw = 0.0 ;
-    des_states[9].position.x = -9.0;     des_states[9].position.y = -1.0;     des_states[9].position.z = 2.25;         des_states[9].velocity.x = 0.0;      des_states[9].velocity.y = 0.0;         des_states[9].velocity.z = 0.0;         des_states[9].yaw = 0.0 ;
-    des_states[10].position.x = -4.0;     des_states[10].position.y = -1.0;     des_states[10].position.z = 2.25;         des_states[10].velocity.x = 1.0;      des_states[10].velocity.y = 0.0;         des_states[10].velocity.z = 0.0;         des_states[10].yaw = 0.0;                       
-    // des_states[10].position.x = 0.0;     des_states[10].position.y = 0.0;     des_states[10].position.z = 2.25;         des_states[10].velocity.x = 0.0;      des_states[10].velocity.y = 0.0;         des_states[10].velocity.z = 0.0;         des_states[10].yaw = 0.0;             
-    // des_states[11].position.x = 0.0;     des_states[11].position.y = 0.0;     des_states[11].position.z = 2.25;         des_states[11].velocity.x = 0.0;      des_states[11].velocity.y = 0.0;         des_states[11].velocity.z = 0.0;         des_states[11].yaw = 0.0;             
+    // ros::Publisher takeoffPub;
+    // takeoffPub = nh.advertise<std_msgs::Bool>("/ardrone/takeoff", 5);
 
-    std::vector<State> states{ State(0, 1, des_states[0], STATE_CHANGE_TYPE::DISTANCE, 0.5) ,
-                               State(1, 2, des_states[1], STATE_CHANGE_TYPE::DISTANCE, 0.5) ,
-                               State(2, 3, des_states[2], STATE_CHANGE_TYPE::DISTANCE, 0.5) ,
-                               State(3, 4, des_states[3], STATE_CHANGE_TYPE::DISTANCE, 0.2) ,
-                               State(4, 5, des_states[4], STATE_CHANGE_TYPE::DISTANCE, 0.2) ,
-                               State(5, 6, des_states[5], STATE_CHANGE_TYPE::DISTANCE, 0.5) ,
-                               State(6, 7, des_states[6], STATE_CHANGE_TYPE::DISTANCE, 0.5) ,
-                               State(7, 8, des_states[7], STATE_CHANGE_TYPE::DISTANCE, 0.5) ,
-                               State(8, 9, des_states[8], STATE_CHANGE_TYPE::DISTANCE, 0.2) ,
-                               State(9, 10, des_states[9], STATE_CHANGE_TYPE::DISTANCE, 0.2) ,
-                               State(10, 1, des_states[10], STATE_CHANGE_TYPE::DISTANCE, 0.5)  };
+    // Wait for initialization
+    ros::Rate rate(0.5);
+    rate.sleep();
+
+    //Takeoff
+    // std_msgs::Bool takeoff;
+    // takeoff.data = true;
+    // takeoffPub.publish(takeoff);
+
+    // Setup State Machine
+    std::vector<racing_drone::DroneState> des_states(50);
+    des_states[0].position.x = 5.0;     des_states[0].position.y = 3.0;     des_states[0].position.z = 2.25;         des_states[0].velocity.x = 0.0;      des_states[0].velocity.y = 0.0;         des_states[0].velocity.z = 0.0;         des_states[0].yaw = -PI/2.0;
+
+    // Two gates arena
+    // des_states[1].position.x = 4.0;     des_states[1].position.y = -0.75;     des_states[1].position.z = 2.25;        des_states[1].velocity.x = 5.0;      des_states[1].velocity.y = 0.0;         des_states[1].velocity.z = 0.0;         des_states[1].yaw = 0.0;
+    // des_states[2].position.x = 7.5;     des_states[2].position.y = -0.75;     des_states[2].position.z = 2.25;         des_states[2].velocity.x = 2.0;      des_states[2].velocity.y = 0.0;         des_states[2].velocity.z = 0.0;         des_states[2].yaw = 0.0;
+    // des_states[3].position.x = 8.5;     des_states[3].position.y = -0.75;     des_states[3].position.z = 2.25;         des_states[3].velocity.x = 0.0;      des_states[3].velocity.y = 0.0;         des_states[3].velocity.z = 0.0;         des_states[3].yaw = PI ;
+    // des_states[4].position.x = 8.5;     des_states[4].position.y = 1.5;     des_states[4].position.z = 2.25;         des_states[4].velocity.x = 0.0;      des_states[4].velocity.y = 0.0;         des_states[4].velocity.z = 0.0;         des_states[4].yaw = PI ;
+    // des_states[5].position.x = 4.0;     des_states[5].position.y = 0.75;     des_states[5].position.z = 2.25;         des_states[5].velocity.x = -5.0;      des_states[5].velocity.y = 0.0;         des_states[5].velocity.z = 0.0;         des_states[5].yaw = PI ;
+    // des_states[6].position.x = -4.0;     des_states[6].position.y = 0.75;     des_states[6].position.z = 2.25;         des_states[6].velocity.x = -5.0;      des_states[6].velocity.y = 0.0;         des_states[6].velocity.z = 0.0;         des_states[6].yaw = PI ;
+    // des_states[7].position.x = -7.5;     des_states[7].position.y = 0.75;     des_states[7].position.z = 2.25;         des_states[7].velocity.x = -2.0;      des_states[7].velocity.y = 0.0;         des_states[7].velocity.z = 0.0;         des_states[7].yaw =  PI ; 
+    // des_states[8].position.x = -8.5;     des_states[8].position.y = 0.75;     des_states[8].position.z = 2.25;         des_states[8].velocity.x = 0.0;      des_states[8].velocity.y = 0.0;         des_states[8].velocity.z = 0.0;         des_states[8].yaw = 0.0;
+    // des_states[9].position.x = -8.5;     des_states[9].position.y = -1.5;     des_states[9].position.z = 2.25;         des_states[9].velocity.x = 2.0;      des_states[9].velocity.y = 0.0;         des_states[9].velocity.z = 0.0;         des_states[9].yaw = 0.0 ;
+    // des_states[10].position.x = -4.0;     des_states[10].position.y = -0.75;     des_states[10].position.z = 2.25;         des_states[10].velocity.x = 5.0;      des_states[10].velocity.y = 0.0;         des_states[10].velocity.z = 0.0;         des_states[10].yaw = 0.0;                       
+    // des_states[10].position.x = 0.0;     des_states[10].position.y = 0.0;     des_states[10].position.z = 2.25;         des_states[10].velocity.x = 0.0;      des_states[10].velocity.y = 0.0;         des_states[10].velocity.z = 0.0;         des_states[10].yaw = 0.0;             
+    // des_states[11].position.x = 0.0;     des_states[11].position.y = 0.0;     des_states[11].position.z = 2.25;         des_states[11].velocity.x = 0.0;      des_states[11].velocity.y = 0.0;         des_states[11].velocity.z = 0.0;         des_states[11].yaw = 0.0;   
+
+    // Four gates arena
+    des_states[1].position.x = 5.0;     des_states[1].position.y = 3.0;      des_states[1].yaw = - PI / 2.0;            des_states[1].position.z = 2.25;         des_states[1].velocity.x = 0.0;      des_states[1].velocity.y = 0.0;         des_states[1].velocity.z = 0.0;   
+    des_states[2].position.x = 5.0;     des_states[2].position.y = 0.0;      des_states[2].yaw = - PI / 2.0;     des_states[2].position.z = 2.25;         des_states[2].velocity.x = 0.0;      des_states[2].velocity.y = -5.0;         des_states[2].velocity.z = 0.0;   
+    des_states[3].position.x = 3.0;     des_states[3].position.y = -5.0;      des_states[3].yaw = - PI;            des_states[3].position.z = 2.25;         des_states[3].velocity.x = 0.0;      des_states[3].velocity.y = 0.0;         des_states[3].velocity.z = 0.0;   
+    des_states[4].position.x = 0.0;     des_states[4].position.y = -5.0;      des_states[4].yaw = - PI ;         des_states[4].position.z = 2.25;         des_states[4].velocity.x = -5.0;      des_states[4].velocity.y = 0.0;         des_states[4].velocity.z = 0.0;   
+    des_states[5].position.x = -5.0;     des_states[5].position.y = -3.0;      des_states[5].yaw = PI / 2.0;           des_states[5].position.z = 2.25;         des_states[5].velocity.x = 0.0;      des_states[5].velocity.y = 0.0;         des_states[5].velocity.z = 0.0;   
+    des_states[6].position.x = -5.0;     des_states[6].position.y = 0.0;      des_states[6].yaw = PI / 2.0;    des_states[6].position.z = 2.25;         des_states[6].velocity.x = 0.0;      des_states[6].velocity.y = 5.0;         des_states[6].velocity.z = 0.0;   
+    des_states[7].position.x = -3.0;     des_states[7].position.y = 5.0;      des_states[7].yaw = 0.0;        des_states[7].position.z = 2.25;         des_states[7].velocity.x = 0.0;      des_states[7].velocity.y = 0.0;         des_states[7].velocity.z = 0.0;   
+    des_states[8].position.x = 0.0;     des_states[8].position.y = 5.0;      des_states[8].yaw = 0.0;        des_states[8].position.z = 2.25;         des_states[8].velocity.x = 5.0;      des_states[8].velocity.y = 0.0;         des_states[8].velocity.z = 0.0;   
+    // des_states[9].position.x = 0.0;     des_states[9].position.y = 0.0;      des_states[9].yaw = 0.0;        des_states[9].position.z = 2.25;         des_states[9].velocity.x = 0.0;      des_states[9].velocity.y = 0.0;         des_states[9].velocity.z = 0.0;            
+
+    std::vector<State> states{ State(0, 1, des_states[0], STATE_CHANGE_TYPE::TIME, 3.0) ,
+                               State(1, 2, des_states[1], STATE_CHANGE_TYPE::DISTANCE, 0.8) ,
+                               State(2, 3, des_states[2], STATE_CHANGE_TYPE::DISTANCE, 1.0) ,
+                               State(3, 4, des_states[3], STATE_CHANGE_TYPE::DISTANCE, 0.8) ,
+                               State(4, 5, des_states[4], STATE_CHANGE_TYPE::DISTANCE, 1.0) ,
+                               State(5, 6, des_states[5], STATE_CHANGE_TYPE::DISTANCE, 0.8) ,
+                               State(6, 7, des_states[6], STATE_CHANGE_TYPE::DISTANCE, 1.0) ,
+                               State(7, 8, des_states[7], STATE_CHANGE_TYPE::DISTANCE, 0.8) ,
+                               State(8, 1, des_states[8], STATE_CHANGE_TYPE::DISTANCE, 1.0) };
+
+  
+
 
     StateMachine state_machine(nh, "/controller/reference", "/localizer/estimated_state", "/state_machine/autonomy", states );
 

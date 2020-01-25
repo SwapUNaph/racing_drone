@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <cstdlib>
 #include <ros/ros.h>
 #include <ros/time.h>
 #include <geometry_msgs/Pose.h>
@@ -58,6 +59,7 @@ class GateDetectorCore
         ros::Subscriber odomSub;
         ros::Subscriber imageSub;
         ros::Subscriber imuSub;
+        ros::Timer EKF_timer;
 
         std::string rawGatePubTopic;
         std::string filteredGatePubTopic;
@@ -77,19 +79,23 @@ class GateDetectorCore
         geometry_msgs::Pose filteredGatePose; 
         std_msgs::Bool success;
 
+        cv_bridge::CvImagePtr cv_ptr;
+
         visualization_msgs::Marker rawGateMarker;
         visualization_msgs::Marker filtGateMarker;
 
         GateDetectorCore(ros::NodeHandle &node_handle, GateDetector gd_, ExtendedKalmanFilter gateEKF_,
              std::string rawGatePubTopic_, std::string filteredGatePubTopic_, std::string odomSubTopic_,
              std::string imageOutTopic_, std::string imuTopic_);
+
         ~GateDetectorCore();
 
         void imageCallback(const sensor_msgs::Image::ConstPtr& ros_img);
         void odomCallback(const nav_msgs::Odometry::ConstPtr& odom); 
         void imuCallback(const sensor_msgs::Imu::ConstPtr& imu);
+        void EKF_timerCallback(const ros::TimerEvent& timerEvent);
         
-        void publishGatePose(Mat& img); 
-        void publishMarkers(void);
+        void updateGatePose(Mat& img); 
+        void initMarkers(void);
 };
 

@@ -72,7 +72,7 @@ double dynamic_constraint_velocity(const std::vector<double> &x, std::vector<dou
 	double dt = vel_struct->dt;
 	double psi = vel_struct->psi;
 	unsigned int Ns = vel_struct->Ns;
-	double drag_term = 0.0;
+	double drag_term = 0.05;
 		
 	//std::cout << "In vel const function" << std::endl;
 	
@@ -197,7 +197,7 @@ double cost_function(const std::vector<double> &x, std::vector<double> &grad, vo
 		for(unsigned int k=0; k < Ns; k++)
 			cost += (x[Ns*i + k] - ref[k]) * (x[Ns*i + k] - ref[k]) * Q[k];
 	
-	// cost += 500.0;
+	cost += 500.0;
 	// std::cout << "\nCost: " << cost << std::endl;
 	return cost;
 }
@@ -217,8 +217,8 @@ MPC::MPC(unsigned int n, std::vector<double> p, double dt_, double maxAng, doubl
     Ns = 9;
     sol_x.resize(N*Ns);
 
-	if( max_thrust_accel > 25 )
-		max_thrust_accel = 25;
+	if( max_thrust_accel > 50 )
+		max_thrust_accel = 50;
 	
 	if( max_thrust_accel < 10 )
 		max_thrust_accel = 10;
@@ -269,8 +269,8 @@ int MPC::optimize(std::vector<double>& x0, std::vector<double>& xN, double& psi)
 	// Upper and Lower bounds
 	std::vector<double> lb(Ns*N);
 	std::vector<double> ub(Ns*N);
-	std::fill(lb.begin(), lb.end(), -100.0);
-	std::fill(ub.begin(), ub.end(), 100.0);
+	std::fill(lb.begin(), lb.end(), -50.0);
+	std::fill(ub.begin(), ub.end(), 50.0);
 	
 
 	for(unsigned int i = 0; i < N; i++)
@@ -288,7 +288,7 @@ int MPC::optimize(std::vector<double>& x0, std::vector<double>& xN, double& psi)
 
 		//Altitude bounds
 		lb[Ns*i + 2] = 0.0;
-		ub[Ns*i + 2] = 5.0;
+		ub[Ns*i + 2] = 20.0;
 		
 	}
 	OPT.set_lower_bounds(lb);

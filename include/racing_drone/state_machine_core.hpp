@@ -69,7 +69,9 @@ class StateMachine
 
     racing_drone::DroneState curr_drone_state;
     ros::Time start_time;
+    ros::Time start_lap_time;
     double time_elapsed;
+    double lap_time;
     double state_error; 
 
     bool autonomy;

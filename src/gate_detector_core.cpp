@@ -50,6 +50,7 @@ GateDetectorCore::GateDetectorCore(ros::NodeHandle &node_handle, GateDetector gd
     odomSub = nh.subscribe(odomSubTopic, 10, &GateDetectorCore::odomCallback, this);
     imageSub = nh.subscribe(imageOutTopic, 2, &GateDetectorCore::imageCallback, this);
     imuSub = nh.subscribe(imuTopic, 2, &GateDetectorCore::imuCallback, this);
+    EKF_timer = nh.createTimer(ros::Duration(gateEKF.dt), &GateDetectorCore::EKF_timerCallback, this);
 
     uEKF.resize(3);
     wEKF.resize(3);
@@ -67,41 +68,17 @@ GateDetectorCore::GateDetectorCore(ros::NodeHandle &node_handle, GateDetector gd
     // yEKF(5) = 0.0;
 
     droneQ.resize(4);
-
     rawGatePose = geometry_msgs::Pose();
     filteredGatePose = geometry_msgs::Pose();
     success = std_msgs::Bool();
 
     // Setup Markers
-    rawMarkerPub = nh.advertise<visualization_msgs::Marker>("/raw_gate_marker", 5);
-    filtMarkerPub = nh.advertise<visualization_msgs::Marker>("/filtered_gate_marker", 5);
+    initMarkers();
 
-    rawGateMarker = visualization_msgs::Marker();
-    filtGateMarker = visualization_msgs::Marker();
-    rawGateMarker.id = 0;
-    filtGateMarker.id = 1;
-    rawGateMarker.type  = visualization_msgs::Marker::SPHERE;
-    filtGateMarker.type = visualization_msgs::Marker::SPHERE;
-    rawGateMarker.header.frame_id = "base_link";
-    filtGateMarker.header.frame_id = "base_link";
-    rawGateMarker.color.r = 255.0f;
-    rawGateMarker.color.g = 25.0f;
-    rawGateMarker.color.b = 0.0f;
-    rawGateMarker.color.a = 0.50;  
-    filtGateMarker.color.r = 0.0f;
-    filtGateMarker.color.g = 255.0f;
-    filtGateMarker.color.b = 0.0f;
-    filtGateMarker.color.a = 0.90; 
-    rawGateMarker.scale.x = 0.20;
-    rawGateMarker.scale.y = 0.20;
-    rawGateMarker.scale.z = 0.20;
-    filtGateMarker.scale.x = 0.20;
-    filtGateMarker.scale.y = 0.20;
-    filtGateMarker.scale.z = 0.20;
-    rawGateMarker.action = visualization_msgs::Marker::ADD;
-    filtGateMarker.action = visualization_msgs::Marker::ADD;
-    rawGateMarker.lifetime = ros::Duration(0.33);
-    filtGateMarker.lifetime = ros::Duration(0.33);
+   
+
+    ros::Time nowTime = ros::Time::now();
+    srand(nowTime.toNSec());
 
 }
 
@@ -129,12 +106,12 @@ void GateDetectorCore::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
     droneQ[2] = odom->pose.pose.orientation.z;
     droneQ[3] = odom->pose.pose.orientation.w;
     
-    uEKF = rotateVec(droneQ, body_vel); // Velocity in body frame
+    uEKF = rotateVec(quatConjugate(droneQ), body_vel); // Velocity in body frame
+    wEKF = rotateVec(quatConjugate(droneQ), wEKF); // Angular velocity in body frame
 
     // uEKF(0) = body_vel(0);
     // uEKF(1) = body_vel(1);
     // uEKF(2) = body_vel(2);  // Measure drone velocity in body frame
-
 }
 
 /**
@@ -142,14 +119,13 @@ void GateDetectorCore::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
  * 
  * @param img Input image for gate detection
  */
-void GateDetectorCore::publishGatePose(Mat& img)
+void GateDetectorCore::updateGatePose(Mat& img)
 {
     Mat imgCopy;
     img.copyTo(imgCopy);
     // ROS_INFO( " before detectgate ");
     bool GATE_DETECTION_SUCCESS = gd.detectGate(img);
     bool GATE_POSE_SUCCESS = false;
-    
 
     // ROS_INFO( " before get gate pose ");
     if( GATE_DETECTION_SUCCESS)
@@ -157,21 +133,30 @@ void GateDetectorCore::publishGatePose(Mat& img)
 
     if( GATE_DETECTION_SUCCESS &&  GATE_POSE_SUCCESS )
     {
-        rawGatePose.position.x = gd.tvec[0];
-        rawGatePose.position.y = gd.tvec[1];
-        rawGatePose.position.z = gd.tvec[2];
+
+        // Generate noise to simulate actual gate detection (0.0 < random < 1.0)
+        double noisex = (rand() % 10000) / 10000.0;
+        double noisey = (rand() % 10000) / 10000.0;
+        double noisez = (rand() % 10000) / 10000.0;
+
+
+        yEKF(0) = gd.tvec[0] + noisex / 10.0;
+        yEKF(1) = gd.tvec[1] + noisey / 10.0;
+        yEKF(2) = gd.tvec[2] + noisez / 10.0;
+
+        rawGatePose.position.x = yEKF(0);
+        rawGatePose.position.y = yEKF(1);
+        rawGatePose.position.z = yEKF(2);
         std::vector<double> gateQ(rvec2quat(gd.rvec));
         rawGatePose.orientation.x = gateQ[0];
         rawGatePose.orientation.y = gateQ[1];
         rawGatePose.orientation.z = gateQ[2];
         rawGatePose.orientation.w = gateQ[3];
 
-        yEKF(0) = gd.tvec[0];
-        yEKF(1) = gd.tvec[1];
-        yEKF(2) = gd.tvec[2];
 
+        //Update EKF
         yEKF = gateMAF.update(yEKF);
-        gateEKF.filter(wEKF, uEKF, yEKF);
+        gateEKF.update(wEKF, yEKF);
         filteredGatePose.position.x = gateEKF.X(0);
         filteredGatePose.position.y = gateEKF.X(1);
         filteredGatePose.position.z = gateEKF.X(2);
@@ -180,22 +165,23 @@ void GateDetectorCore::publishGatePose(Mat& img)
         filteredGatePose.orientation.z = gateQ[2];
         filteredGatePose.orientation.w = gateQ[3];
 
+        // Publish raw gate pose and raw gate pose marker
         rawGatePosePub.publish(rawGatePose);
+        rawGateMarker.pose = rawGatePose;
+        rawGateMarker.header.stamp = ros::Time::now();
+        rawMarkerPub.publish(rawGateMarker);
+
         success.data = true;
         drawContours(imgCopy, std::vector<std::vector<Point>>(1,gd.gateContour), -1, Scalar(255,0,0), 4, 8);
     }
     else
     {
-        gateEKF.predict(wEKF, uEKF);
-        filteredGatePose.position.x = gateEKF.X(0);
-        filteredGatePose.position.y = gateEKF.X(1);
-        filteredGatePose.position.z = gateEKF.X(2);
         success.data = false;  
     }
     
-    filteredGatePosePub.publish(filteredGatePose);
     successPub.publish(success);
 
+    // Publish the image with/without gate 
     cv_bridge::CvImage cvImg;
     cvImg.encoding = "bgr8";
     cvImg.image = imgCopy;
@@ -205,18 +191,8 @@ void GateDetectorCore::publishGatePose(Mat& img)
 
 void GateDetectorCore::imageCallback(const sensor_msgs::Image::ConstPtr& ros_img)
 {
-    cv_bridge::CvImagePtr cv_ptr;
     cv_ptr = cv_bridge::toCvCopy(ros_img, sensor_msgs::image_encodings::BGR8);
-
-    ros::Time begin = ros::Time::now();
-
-    publishGatePose(cv_ptr->image);
-
-    ros::Time end = ros::Time::now();
-    double loopTime = end.toNSec() - begin.toNSec();
-    ROS_INFO("Gate detector loop time: %.0f ms\n", loopTime/1e6);
-
-    publishMarkers();
+    updateGatePose(cv_ptr->image);
 }
 
 void GateDetectorCore::imuCallback(const sensor_msgs::Imu::ConstPtr& imu)
@@ -235,16 +211,52 @@ void GateDetectorCore::imuCallback(const sensor_msgs::Imu::ConstPtr& imu)
 
 }
 
-void GateDetectorCore::publishMarkers(void)
+void GateDetectorCore::EKF_timerCallback(const ros::TimerEvent& timerEvent)
 {
-    rawGateMarker.pose = rawGatePose;
-    rawGateMarker.header.stamp = ros::Time::now();
+    // Predict gate pose
+    gateEKF.predict(wEKF, uEKF);
+    filteredGatePose.position.x = gateEKF.X(0);
+    filteredGatePose.position.y = gateEKF.X(1);
+    filteredGatePose.position.z = gateEKF.X(2);
 
+    // Publish filtered gate pose and marker
+    filteredGatePosePub.publish(filteredGatePose);
     filtGateMarker.pose = filteredGatePose;
     filtGateMarker.header.stamp = ros::Time::now();
-
-    rawMarkerPub.publish(rawGateMarker);
     filtMarkerPub.publish(filtGateMarker);
+}
+
+void GateDetectorCore::initMarkers(void)
+{
+    rawMarkerPub = nh.advertise<visualization_msgs::Marker>("/raw_gate_marker", 5);
+    filtMarkerPub = nh.advertise<visualization_msgs::Marker>("/filtered_gate_marker", 5);
+
+    rawGateMarker = visualization_msgs::Marker();
+    filtGateMarker = visualization_msgs::Marker();
+    rawGateMarker.id = 0;
+    filtGateMarker.id = 1;
+    rawGateMarker.type  = visualization_msgs::Marker::SPHERE;
+    filtGateMarker.type = visualization_msgs::Marker::SPHERE;
+    rawGateMarker.header.frame_id = "base_link";
+    filtGateMarker.header.frame_id = "base_link";
+    rawGateMarker.color.r = 0.0f;
+    rawGateMarker.color.g = 255.0f;
+    rawGateMarker.color.b = 0.0f;
+    rawGateMarker.color.a = 0.75;  
+    filtGateMarker.color.r = 255.0f;
+    filtGateMarker.color.g = 0.0f;
+    filtGateMarker.color.b = 0.0f;
+    filtGateMarker.color.a = 1.0; 
+    rawGateMarker.scale.x = 0.20;
+    rawGateMarker.scale.y = 0.20;
+    rawGateMarker.scale.z = 0.20;
+    filtGateMarker.scale.x = 0.20;
+    filtGateMarker.scale.y = 0.20;
+    filtGateMarker.scale.z = 0.20;
+    rawGateMarker.action = visualization_msgs::Marker::ADD;
+    filtGateMarker.action = visualization_msgs::Marker::ADD;
+    rawGateMarker.lifetime = ros::Duration(0.1);
+    filtGateMarker.lifetime = ros::Duration(0.1);
 }
 
 

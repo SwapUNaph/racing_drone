@@ -124,16 +124,16 @@ bool GateDetector::detectGate(Mat& image){
     // Mat hsv, mask, blur;
 	//Convert to HSV
 	cvtColor(image, image, COLOR_BGR2HSV);
-	//imshow("HSV", hsv);
+	//imshow("HSV", image);
 
 	// ROS_INFO( "before mask " );
 	//Mask
 	inRange(image, hsv_low_thresh, hsv_high_thresh, image);
-	// imshow("MASK", mask);
+	// imshow("MASK", image);
 	
 	//Blur 
 	GaussianBlur(image, image, Size(blur_kernel, blur_kernel), 5, 5);
-	//imshow("BLUR", blur);
+	// imshow("BLUR", image);
 
 	// ROS_INFO( "before find contours " );
 	//Find contours

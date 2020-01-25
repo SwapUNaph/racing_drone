@@ -84,5 +84,6 @@ public:
 	void calculateJacobianA(std::vector<double> w);
 	void filter(std::vector<double> w, ublas::vector<double> u, ublas::vector<double> y);
 	void predict(std::vector<double> w, ublas::vector<double> u);
+	void update(std::vector<double> w, ublas::vector<double> y);
 };
 

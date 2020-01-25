@@ -131,6 +131,8 @@ void Controller::computeControlInput(void)
 	std::fill(x0.begin(), x0.end(), 0.0);
 	std::copy(currState.begin(), currState.end() - 3, x0.begin());
 	std::copy(refState.begin(), refState.end() - 3, xRef.begin()); //refState[0->5] -> xN[0->5]
+	
+	xRef[8] = 9.8; // Thrust reference
 
 	// ROS_INFO("\nReference x: %f, y: %f, z: %f\n vx: %f, vy: %f, vz: %f\n R: %f, P: %f, Y: %f\n", xRef[0], xRef[1], xRef[2],
 	// 			xRef[3], xRef[4], xRef[5], xRef[6], xRef[7], xRef[8]);
@@ -152,8 +154,8 @@ void Controller::computeControlInput(void)
 	diffQuat = quatDifference(refQuat, currQuat);
 	quat2rpy(diffQuat, diffRPY);
 
-	double yaw_control = 1.0 * diffRPY[2];
-	double thrust = 0.2 * (refState[2] - currState[2]);
+	double yaw_control = 2.0 * diffRPY[2];
+	// double thrust = 0.2 * (refState[2] - currState[2]);
 	// double pitch_moment = 5.0 * (quad_mpc.sol_x[6] - currState[6]);
 	// double roll_moment = 5.0 * (quad_mpc.sol_x[7] - currState[7]);
 
