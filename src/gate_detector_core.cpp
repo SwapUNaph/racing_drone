@@ -38,7 +38,7 @@
 GateDetectorCore::GateDetectorCore(ros::NodeHandle &node_handle, GateDetector gd_, ExtendedKalmanFilter gateEKF_,
              std::string rawGatePubTopic_, std::string filteredGatePubTopic_, std::string odomSubTopic_,
              std::string imageOutTopic_, std::string imuTopic_) 
-                            :   nh(node_handle) , gd(gd_), gateEKF(gateEKF_), gateMAF(5,3), rawGatePubTopic(rawGatePubTopic_),
+                            :   nh(node_handle) , gd(gd_), gateEKF(gateEKF_), gateMAF(3,3), rawGatePubTopic(rawGatePubTopic_),
                                  filteredGatePubTopic(filteredGatePubTopic_), odomSubTopic(odomSubTopic_),
                                  imageOutTopic(imageOutTopic_), imuTopic(imuTopic_)
 {
@@ -47,7 +47,7 @@ GateDetectorCore::GateDetectorCore(ros::NodeHandle &node_handle, GateDetector gd
     successPub = nh.advertise<std_msgs::Bool>("/gate_detector/success", 5);
     gateImagePub = nh.advertise<sensor_msgs::Image>("gate_detector/gate_image", 2);
 
-    odomSub = nh.subscribe(odomSubTopic, 10, &GateDetectorCore::odomCallback, this);
+    odomSub = nh.subscribe(odomSubTopic, 5, &GateDetectorCore::odomCallback, this);
     imageSub = nh.subscribe(imageOutTopic, 2, &GateDetectorCore::imageCallback, this);
     imuSub = nh.subscribe(imuTopic, 2, &GateDetectorCore::imuCallback, this);
     EKF_timer = nh.createTimer(ros::Duration(gateEKF.dt), &GateDetectorCore::EKF_timerCallback, this);
@@ -75,11 +75,8 @@ GateDetectorCore::GateDetectorCore(ros::NodeHandle &node_handle, GateDetector gd
     // Setup Markers
     initMarkers();
 
-   
-
     ros::Time nowTime = ros::Time::now();
     srand(nowTime.toNSec());
-
 }
 
 
@@ -127,9 +124,11 @@ void GateDetectorCore::updateGatePose(Mat& img)
     bool GATE_DETECTION_SUCCESS = gd.detectGate(img);
     bool GATE_POSE_SUCCESS = false;
 
+
     // ROS_INFO( " before get gate pose ");
     if( GATE_DETECTION_SUCCESS)
         GATE_POSE_SUCCESS = gd.getGatePose();
+
 
     if( GATE_DETECTION_SUCCESS &&  GATE_POSE_SUCCESS )
     {

@@ -85,6 +85,7 @@ GateDetector::GateDetector( double gateSide_,
 							double area_thresh_,
 							double aspect_ratio_low_,
 							double roi_mean_thresh_,
+							double gate_dist_thresh_,
 							Mat cameraMatrix_,
 							Mat distCoeffs_       )
 	: 	gateSide(gateSide_),
@@ -94,6 +95,7 @@ GateDetector::GateDetector( double gateSide_,
 		area_thresh(area_thresh_),
 		aspect_ratio_low(aspect_ratio_low_),
 		roi_mean_thresh(roi_mean_thresh_),
+		gate_dist_thresh(gate_dist_thresh_),
 		cameraMatrix(cameraMatrix_),
 		distCoeffs(distCoeffs_ )
 {
@@ -277,7 +279,13 @@ bool GateDetector::getGatePose(void)
 		Tvec.col(0).copyTo(tvec);
 		Rvec.col(0).copyTo(rvec);
 		// ROS_INFO("rpy [drone]: %f, %f, %f", rvec[0], rvec[1], rvec[2]);
-        return true;
+
+		// Gate distance check
+		double gate_distance = sqrt( tvec[0]*tvec[0] + tvec[1]*tvec[1] + tvec[2]*tvec[2] );
+		if( gate_distance > gate_dist_thresh)
+			return false;
+		else
+        	return true;
 	}
 
 	else

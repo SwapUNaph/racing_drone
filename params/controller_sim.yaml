@@ -1,0 +1,11 @@
+controller:
+  controller_rate: 50
+  prediction_horizon: 5
+  prediction_time_step: 0.5
+  odom_sub_topic: "/localizer/estimated_state"
+  ref_sub_topic: "/controller/reference"
+  cmd_pub_topic: "/cmd_vel"
+  state_penalties: [ 1, 1, 5, 2, 2, 5, 0.01, 0.01, 1]
+  max_angle: 85 # Angle in degrees (0 < max_angle < 85)
+  max_thrust: 30 # Thrust acceleration (10 < max_thrust < 50 (~5g))
+  bebop: false # If using bebop drone make true

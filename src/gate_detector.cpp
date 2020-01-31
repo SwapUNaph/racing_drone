@@ -45,6 +45,7 @@ int main(int argc, char **argv)
   double area_thresh;
   double aspect_ratio_low;
   double roi_mean_thresh;
+  double gate_dist_thresh;
   std::vector<double> cameraMatrix;
   std::vector<double> distCoeffs;
   std::vector<double> mnVar;
@@ -63,6 +64,7 @@ int main(int argc, char **argv)
   ros::param::get("gate_detector/area_thresh", area_thresh);
   ros::param::get("gate_detector/aspect_ratio_low", aspect_ratio_low);
   ros::param::get("gate_detector/roi_mean_thresh", roi_mean_thresh);
+  ros::param::get("gate_detector/gate_dist_thresh", gate_dist_thresh);
   ros::param::get("gate_detector/cameraMatrix", cameraMatrix);
   ros::param::get("gate_detector/distCoeffs", distCoeffs);
   ros::param::get("gate_detector/meas_noise_variance", mnVar);
@@ -98,6 +100,7 @@ int main(int argc, char **argv)
                     area_thresh,
                     aspect_ratio_low,
                     roi_mean_thresh,
+                    gate_dist_thresh,
                     camMat,
                     distCoef   );
 
@@ -149,7 +152,8 @@ int main(int argc, char **argv)
         
     }
 
-  ExtendedKalmanFilter gEKF(a,b,h,q,r, 1.0 / EKFrate);
+  double ekf_dt = 1.0 / EKFrate;
+  ExtendedKalmanFilter gEKF(a,b,h,q,r, ekf_dt);
 
   GateDetectorCore gateDetectorNode(nh, gd, gEKF, rawGatePubTopic, filteredGatePubTopic, odomSubTopic, imageTopic, imuTopic);
 

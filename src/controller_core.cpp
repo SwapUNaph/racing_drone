@@ -40,20 +40,24 @@
  * @param refTopic Reference State topic (DroneState)
  * @param cmdTopic Control Command Topic (Twist)
  */
+
 Controller::Controller(int rt, int n, std::vector<double> p, double dt_, double maxAng_, double maxThrust_,
-			const std::string& odomTopic, const std::string& refTopic, const std::string& cmdTopic)
-			 : rate(rt), quad_mpc(n, p, dt_, maxAng_, maxThrust_), odomSubTopic(odomTopic), refSubTopic(refTopic), cmdPubTopic(cmdTopic)
+			const std::string& odomTopic, const std::string& refTopic, const std::string& cmdTopic, bool bebop_ )
+			 : rate(rt), quad_mpc(n, p, dt_, maxAng_, maxThrust_), odomSubTopic(odomTopic), refSubTopic(refTopic), cmdPubTopic(cmdTopic), bebop(bebop_)
 {
 	currState.resize(9);
 	refState.resize(9);
 
 	odomSubscriber = nh.subscribe(odomSubTopic, 10, &Controller::odomCallback, this);
 	refSubscriber = nh.subscribe(refSubTopic, 10, &Controller::refCallback, this);
+	enCtrlSubscriber = nh.subscribe("/auto/autonomy_active", 10, &Controller::enCtrlCallback, this);
 	cmdPublisher = nh.advertise<geometry_msgs::Twist>(cmdPubTopic, 10);
+	controlTimer = nh.createTimer(ros::Duration(1.0/rate), &Controller::controllerTimerCallback, this);
 
 	std::fill(refState.begin(), refState.end(), 0.0);
 	refState[2] = 1.0;
 
+	enable_control = true;
 }
 
 /**
@@ -77,9 +81,6 @@ void Controller::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
 	currState[0] = odom->pose.pose.position.x;
 	currState[1] = odom->pose.pose.position.y;
 	currState[2] = odom->pose.pose.position.z;
-	currState[3] = odom->twist.twist.linear.x;
-	currState[4] = odom->twist.twist.linear.y;
-	currState[5] = odom->twist.twist.linear.z;
 
 	std::vector<double> quat(4), rpy(3);
 	quat[0] = odom->pose.pose.orientation.x;
@@ -90,6 +91,28 @@ void Controller::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
 	currState[6] = rpy[0];
 	currState[7] = rpy[1];
 	currState[8] = rpy[2];
+
+	if( bebop )
+	{
+		// bebop publishes body velocity
+		std::vector<double> body_vel;
+		body_vel[0] = odom->twist.twist.linear.x;
+		body_vel[1] = odom->twist.twist.linear.y;
+		body_vel[2] = odom->twist.twist.linear.z;
+
+		body_vel = rotateVec(quatConjugate(quat), body_vel); //Transforming to inertial frame
+
+		currState[3] = body_vel[0];
+		currState[4] = body_vel[1];
+		currState[5] = body_vel[2];
+	}
+	else
+	{
+		currState[3] = odom->twist.twist.linear.x;
+		currState[4] = odom->twist.twist.linear.y;
+		currState[5] = odom->twist.twist.linear.z;
+	}
+	
 
 	state_mutex.unlock();
 }
@@ -114,6 +137,16 @@ void Controller::refCallback(const racing_drone::DroneState::ConstPtr& refDroneS
 	// ROS_INFO("\nReference x: %f, y: %f, z: %f\n vx: %f, vy: %f, vz: %f\n R: %f, P: %f, Y: %f\n", refState[0], refState[1], refState[2],
 	//  refState[3], refState[4], refState[5], refState[6], refState[7], refState[8]);
 
+}
+
+/**
+ * @brief Set the enable control variable
+ * 
+ * @param enCtrl 
+ */
+void Controller::enCtrlCallback(const std_msgs::Bool::ConstPtr& enCtrl)
+{
+	enable_control = enCtrl->data;
 }
 
 /**
@@ -154,20 +187,44 @@ void Controller::computeControlInput(void)
 	diffQuat = quatDifference(refQuat, currQuat);
 	quat2rpy(diffQuat, diffRPY);
 
-	double yaw_control = 2.0 * diffRPY[2];
-	// double thrust = 0.2 * (refState[2] - currState[2]);
+	double yaw_control = 1.0 * diffRPY[2];
+	double thrust = 0.5 * (refState[2] - currState[2]);
 	// double pitch_moment = 5.0 * (quad_mpc.sol_x[6] - currState[6]);
 	// double roll_moment = 5.0 * (quad_mpc.sol_x[7] - currState[7]);
 
 	// quad_mpc.sol_x =  [x,y,z,vx,vy,vz,pitch,roll,thrust]
-	controlInput.linear.x = quad_mpc.sol_x[7]; // roll
-	controlInput.linear.y = quad_mpc.sol_x[6]; //pitch
-	controlInput.linear.z = quad_mpc.sol_x[8]; // thrust
-	// controlInput.linear.z = thrust; // thrust
-	// controlInput.angular.x = pitch_moment;
-	// controlInput.angular.y = roll_moment;
-	controlInput.angular.z = yaw_control; // yaw
 
+	if( bebop )
+	{
+		// Bebop2 quad control input
+		controlInput.linear.x = quad_mpc.sol_x[6] * 180.0 / PI / 20.0; // pitch
+		controlInput.linear.y = - quad_mpc.sol_x[7] * 180.0 / PI / 20.0; // roll
+		// controlInput.linear.z = 0.5 * (quad_mpc.sol_x[8] - 9.8); // thrust
+		controlInput.linear.z = thrust; // thrust
+		// controlInput.angular.x = pitch_moment;
+		// controlInput.angular.y = roll_moment;
+		controlInput.angular.z = yaw_control; // yaw
+	}
+	else
+	{
+		// Simulation quad control input
+		controlInput.linear.x = quad_mpc.sol_x[7]; // roll
+		controlInput.linear.y = quad_mpc.sol_x[6]; //pitch
+		controlInput.linear.z = quad_mpc.sol_x[8]; // thrust
+		// controlInput.linear.z = thrust; // thrust
+		// controlInput.angular.x = pitch_moment;
+		// controlInput.angular.y = roll_moment;
+		controlInput.angular.z = yaw_control; // yaw
+	}
+	
+
+
+
+}
+
+void Controller::controllerTimerCallback(const ros::TimerEvent& timerEvent)
+{
+	publishControlInput();
 }
 
 /**
@@ -221,13 +278,22 @@ double  Controller::computeVelocityError(void)
  */
 void Controller::publishControlInput(void)
 {	
-	ros::Time begin = ros::Time::now();
-    computeControlInput();
-    ros::Time end = ros::Time::now();
-	double loopTime = end.toNSec() - begin.toNSec();
-	ROS_INFO( "Control compute time: %.0f ms\n", loopTime/1e6);
+	if( enable_control )
+	{
+		ros::Time begin = ros::Time::now();
+		computeControlInput();
+		ros::Time end = ros::Time::now();
+		double loopTime = end.toNSec() - begin.toNSec();
+		ROS_INFO( "Control compute time: %.0f ms\n", loopTime/1e6);
+		cmdPublisher.publish(controlInput);			
+	}
+	else
+	{
+		// geometry_msgs::Twist zero_state;
+		// cmdPublisher.publish(zero_state);
+	}
+	
 
-	cmdPublisher.publish(controlInput);
 		
 	// ROS_INFO( "\nControl Published: theta: %f, phi: %f, T: %f, yaw: %f \n", controlInput.linear.y,
 	// 		 controlInput.linear.x, controlInput.linear.z, controlInput.angular.z);

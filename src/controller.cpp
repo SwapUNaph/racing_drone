@@ -42,6 +42,7 @@ int main(int argc, char **argv)
   std::vector<double> P;
   double max_angle;
   double max_thrust;
+  bool bebop;
 
   ros::param::get("controller/controller_rate", controller_rate);
   ros::param::get("controller/prediction_horizon", prediction_horizon);
@@ -52,6 +53,7 @@ int main(int argc, char **argv)
   ros::param::get("controller/state_penalties", P);
   ros::param::get("controller/max_angle", max_angle);
   ros::param::get("controller/max_thrust", max_thrust);
+  ros::param::get("controller/bebop", bebop);
 
   // ROS_INFO("[Controller] controller_rate: %d", controller_rate);
   // ROS_INFO("[Controller] prediction_horizon: %d", prediction_horizon);
@@ -63,21 +65,14 @@ int main(int argc, char **argv)
 
 
   Controller controller(controller_rate, prediction_horizon, P, prediction_time_step, max_angle, max_thrust,
-                        odom_sub_topic, ref_sub_topic, cmd_pub_topic);
-
-  ros::Rate conRate(controller_rate); // Tell ROS how fast to run this node.
+                        odom_sub_topic, ref_sub_topic, cmd_pub_topic, bebop);
 
   //Wait for other nodes to initialize
   // ros::Rate sleepRate(0.2);
 	// sleepRate.sleep();
 
-  // Main loop.
-  while (controller.nh.ok())
-  {
-    ros::spinOnce();
-    controller.publishControlInput();
-    conRate.sleep();
-  }
+  ros::MultiThreadedSpinner multiSpinner(6);
+  ros::spin(multiSpinner);
 
   return 0;
 } // end main()

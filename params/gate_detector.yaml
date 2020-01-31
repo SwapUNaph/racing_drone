@@ -1,16 +1,17 @@
 gate_detector:
     gateSide: 1.5
     hsv_low_thresh: [ 0, 50, 50 ] 
-    hsv_high_thresh: [ 30, 255, 255 ]
-    blur_kernel: 3
-    area_thresh: 500
+    hsv_high_thresh: [ 50, 255, 255 ]
+    blur_kernel: 5
+    area_thresh: 1000
     aspect_ratio_low: 0.4
-    roi_mean_thresh: 200
+    roi_mean_thresh: 50
+    gate_dist_thresh: 20
     cameraMatrix: [ 700, 0.0, 640, 0.0, 700, 360, 0.0, 0.0, 1.0 ]
     distCoeffs: [ -0.174, 0.0283, 0.0, 0.0, 0.0 ]
-    meas_noise_variance: [ 10, 10, 10 ]
+    meas_noise_variance: [ 5, 5, 5 ]
     process_noise_variance: [ 1, 1, 1 ]
-    EKFrate: 60
+    EKFrate: 100
     rawGatePubTopic: "/gate_detector/raw_gate_pose"
     filteredGatePubTopic: "/gate_detector/filtered_gate_pose"
     odomSubTopic: "/ground_truth/state"

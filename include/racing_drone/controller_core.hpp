@@ -33,6 +33,7 @@
 #include <mutex>
 #include <ros/ros.h>
 #include <ros/time.h>
+#include <std_msgs/Bool.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
@@ -41,10 +42,11 @@
 
 class Controller
 {
-public:
 	ros::Publisher cmdPublisher; //Control Input publisher
 	ros::Subscriber refSubscriber; // Reference Input subscriber
 	ros::Subscriber odomSubscriber; // Odometery subscriber
+	ros::Subscriber enCtrlSubscriber; // Enable Control subscriber
+	ros::Timer controlTimer; // Control compute and publish timer
 	ros::NodeHandle nh; // Node handle
 	std::string odomSubTopic;
 	std::string refSubTopic;
@@ -59,13 +61,18 @@ public:
 	geometry_msgs::Pose refPose; // Reference pose
 	std::vector<double> refState; // x,y,z,vx,vy,vz,roll,pitch,yaw
 	std::mutex state_mutex; // Mutex for locking currState access
+	bool enable_control;
+	bool bebop;
 	
+public:
 	Controller(int rt, int n, std::vector<double> p, double dt_, double maxAng_, double maxThrust_,
-			const std::string& odomTopic, const std::string& refTopic, const std::string& cmdTopic); //Controller Constructor
+			const std::string& odomTopic, const std::string& refTopic, const std::string& cmdTopic, bool bebop_); //Controller Constructor
 	~Controller(); //Controller Destructor
 	
 	void odomCallback(const nav_msgs::Odometry::ConstPtr& odom); //Odometry Callbcak for updating current state
 	void refCallback(const racing_drone::DroneState::ConstPtr& refDroneState); // Reference Callback for updating reference Pose
+	void controllerTimerCallback(const ros::TimerEvent& timerEvent);
+	void enCtrlCallback(const std_msgs::Bool::ConstPtr& enCtrl);
 	void computeControlInput(void); // Compute Control Input by MPC optimization
 	void publishControlInput(void); // Publish Control Input 
 

@@ -89,15 +89,13 @@ void StateMachine::updateState(void)
     bool STATE_CHANGE = false;
 
     if( state.state_change_type == STATE_CHANGE_TYPE::DISTANCE )
-        if( state_error < state.change_threshold )
+        if( state_error < state.change_threshold || time_elapsed > 5.0)
             STATE_CHANGE = true;
 
     if( state.state_change_type == STATE_CHANGE_TYPE::TIME )
         if( time_elapsed > state.change_threshold )
             STATE_CHANGE = true;
 
-    if( time_elapsed > 5.0 )    // If time in state is more than 5s then change state
-        STATE_CHANGE = true;
 
     if( state.id == 1 && time_elapsed < 0.1)
     {

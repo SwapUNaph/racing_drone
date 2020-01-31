@@ -57,6 +57,7 @@ class GateDetector
     double area_thresh;
     double aspect_ratio_low;
     double roi_mean_thresh;
+    double gate_dist_thresh;
     Mat cameraMatrix;
     Mat distCoeffs;
 
@@ -72,6 +73,7 @@ class GateDetector
                     double area_thresh_,
                     double aspect_ratio_low_,
                     double roi_mean_thresh_,
+                    double gate_dist_thresh,
                     Mat cameraMatrix_,
                     Mat distCoeffs_  );
 

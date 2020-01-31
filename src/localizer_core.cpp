@@ -43,6 +43,9 @@ Localizer::Localizer(ros::NodeHandle nh_, std::string odomSubTopic_, std::string
     outOdom = inOdom;
     gatePoseDrone = geometry_msgs::Pose();
     gatePoseOrigin = geometry_msgs::Pose();
+
+    // gatePoseOrigin.position = gates[0].position;
+
     visualGateIndex = 0;
 
     ROS_INFO( "Localizer Initialized ...");
