@@ -68,7 +68,7 @@ RD::KalmanFilter::KalmanFilter(matrix<double> a, matrix<double> b, matrix<double
 	K.resize(A.size1(), H.size1());
 
 	for(unsigned int i=0; i<P.size1(); ++i)
-		P(i,i) = 100.0;
+		P(i,i) = Q(i,i);
 	
 	X.resize(A.size1());
 	X_dot.resize(A.size1());

@@ -1,7 +1,7 @@
 gate_detector:
     gateSide: 1.5
-    hsv_low_thresh: [ 0, 0, 50 ] 
-    hsv_high_thresh: [ 120, 255, 255 ]
+    hsv_low_thresh: [ 0, 50, 50 ] 
+    hsv_high_thresh: [ 50, 255, 255 ]
     blur_kernel: 5
     area_thresh: 1000
     aspect_ratio_low: 0.4

@@ -42,7 +42,7 @@ int main(int argc, char **argv)
   std::vector<double> P;
   double max_angle;
   double max_thrust;
-  bool bebop;
+  int bebop_param;
 
   ros::param::get("controller/controller_rate", controller_rate);
   ros::param::get("controller/prediction_horizon", prediction_horizon);
@@ -53,7 +53,9 @@ int main(int argc, char **argv)
   ros::param::get("controller/state_penalties", P);
   ros::param::get("controller/max_angle", max_angle);
   ros::param::get("controller/max_thrust", max_thrust);
-  ros::param::get("controller/bebop", bebop);
+  ros::param::get("controller/bebop", bebop_param);
+  
+  bool bebop = (bebop_param == 0) ? false : true;
 
   // ROS_INFO("[Controller] controller_rate: %d", controller_rate);
   // ROS_INFO("[Controller] prediction_horizon: %d", prediction_horizon);

@@ -95,16 +95,17 @@ void Controller::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
 	if( bebop )
 	{
 		// bebop publishes body velocity
-		std::vector<double> body_vel;
+		std::vector<double> body_vel(3);
 		body_vel[0] = odom->twist.twist.linear.x;
 		body_vel[1] = odom->twist.twist.linear.y;
 		body_vel[2] = odom->twist.twist.linear.z;
 
-		body_vel = rotateVec(quatConjugate(quat), body_vel); //Transforming to inertial frame
+		body_vel = rotateVec(quat, body_vel); //Transforming to inertial frame
 
 		currState[3] = body_vel[0];
 		currState[4] = body_vel[1];
 		currState[5] = body_vel[2];
+
 	}
 	else
 	{
@@ -115,6 +116,7 @@ void Controller::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
 	
 
 	state_mutex.unlock();
+	// ROS_INFO( "Odom Callback Success." );
 }
 
 /**
@@ -188,7 +190,7 @@ void Controller::computeControlInput(void)
 	quat2rpy(diffQuat, diffRPY);
 
 	double yaw_control = 1.0 * diffRPY[2];
-	double thrust = 0.5 * (refState[2] - currState[2]);
+	double thrust = 1.0 * (refState[2] - currState[2]);
 	// double pitch_moment = 5.0 * (quad_mpc.sol_x[6] - currState[6]);
 	// double roll_moment = 5.0 * (quad_mpc.sol_x[7] - currState[7]);
 

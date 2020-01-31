@@ -1,11 +1,11 @@
 controller:
-  controller_rate: 50
-  prediction_horizon: 8
-  prediction_time_step: 0.5
+  controller_rate: 60
+  prediction_horizon: 10
+  prediction_time_step: 0.4
   odom_sub_topic: "/bebop/odom"
   ref_sub_topic: "/controller/reference"
   cmd_pub_topic: "/bebop/cmd_vel"
-  state_penalties: [ 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.1]
+  state_penalties: [ 1, 1, 1, 2, 2, 2, 1, 1, 1] # x, y, z, vx, vy, vz, pitch, roll, thrust
   max_angle: 20 # Angle in degrees (0 < max_angle < 85)
   max_thrust: 30 # Thrust acceleration (10 < max_thrust < 50 (~5g))
-  bebop: true # If using bebop drone make true
+  bebop: 1 # If using bebop drone enter 1
