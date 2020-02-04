@@ -63,8 +63,8 @@ void Controller::computeControlInput(void)
 	// double pitch_moment = 5.0 * (quad_mpc.sol_x[6] - currState[6]);
 	// double roll_moment = 5.0 * (quad_mpc.sol_x[7] - currState[7]);
 
-	controlInput.linear.x = 5.0 * quad_mpc.sol_x[6];
-	controlInput.linear.y = - 5.0 * quad_mpc.sol_x[7];
+	controlInput.linear.x = quad_mpc.sol_x[6];
+	controlInput.linear.y = - quad_mpc.sol_x[7];
 	controlInput.linear.z = thrust;
 	// controlInput.angular.x = pitch_moment;
 	// controlInput.angular.y = roll_moment;
@@ -74,6 +74,6 @@ void Controller::computeControlInput(void)
 void Controller::publishControlInput(void)
 {	
 	cmdPublisher.publish(controlInput);
-	// ROS_INFO( "\nControl Published: theta: %f, phi: %f, T: %f, yaw: %f \n", controlInput.linear.x,
-	// 		 controlInput.linear.y, controlInput.linear.z, controlInput.angular.z);
+	ROS_INFO( "\nControl Published: theta: %f, phi: %f, T: %f, yaw: %f \n", controlInput.linear.x,
+	 		 controlInput.linear.y, controlInput.linear.z, controlInput.angular.z);
 }

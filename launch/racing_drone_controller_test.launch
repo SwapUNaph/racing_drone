@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!--
+<author>Swapneel Naphade</author>
+<email>snaphade@umd.edu</email>
+<version>3.0</version>
+-->
+
+<launch>
+  
+  <!-- Launch RVIZ -->
+  <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find auto_drone)/rviz/adr_track.rviz" /> -->
+  
+  <!-- Launch Keyboard Teleop -->
+<!--
+  <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop"  args="-d _speed:=1000 _turn:=10"/>
+-->
+
+  <!-- Load parameters -->
+  <rosparam command="load" file="$(find racing_drone)/params/state_estimator.yaml" />
+  <rosparam command="load" file="$(find racing_drone)/params/controller.yaml" />
+  
+  <!-- Launch controller node -->
+  <node pkg="racing_drone" type="controller" name="controller" output='screen'/>
+  
+  <!-- Launch state_estimator node -->
+  <node pkg="racing_drone" type="state_estimator" name="state_estimator"  output='screen'/>
+   
+   	     
+  <!-- Takeoff Command -->
+
+
+   
+  <!-- Launch gate_detector node -->
+<!--
+  <node pkg="auto_drone" type="gate_detection.py" name="gate_detector" output='screen'/>
+-->
+   
+</launch>
