@@ -1,7 +1,7 @@
 /**
- * @file state_estimator_core.hpp
+ * @file PID.hpp
  * @author Swapneel Naphade (naphadeswapneel@gmail.com)
- * @brief state_estimator_core declaration 
+ * @brief PID class declaration
  * @version 0.1
  * @date 01-05-2020
  * 
@@ -27,38 +27,30 @@
  */
 
 #pragma once
+#include <cmath>
 
-#include <ros/ros.h>
-#include <ros/time.h>
-#include <nav_msgs/Odometry.h>
-#include "racing_drone/KalmanFilter.hpp"
-
-using namespace RD;
-
-class StateEstimator
-{
-public:
-    ros::NodeHandle nh;
-    ros::NodeHandle pnh;
-	ros::Publisher odomPublisher;
-	ros::Subscriber odomSubscriber;
-	ros::Timer estimatorLoopTimer;
-	std::string pubTopic;
-	std::string subTopic;
-	int rate;
-	KalmanFilter KF;
-	nav_msgs::Odometry odomOut;
-	
-	StateEstimator(const ros::NodeHandle &node_handle,
-					const std::string& pub_topic,
-					const std::string& sub_topic,
-					int rt, KalmanFilter kf);
-	~StateEstimator();
-	
-	void init(void);
-	void odomCallback(const nav_msgs::Odometry::ConstPtr& odom);
-	void estimatorLoopTimerCallback(const ros::TimerEvent& timerEvent);
-	void publishOdometry(void);
+class PID{ 
+private:
+	float P;
+	float I;
+	float D;
+	float dt;
+	float error;
+	float integration;
+	float derivative;
+	float integration_limit;
+public: 
+	PID(float p, float i, float d, float dt_);
+	~PID();
+	float update(float err);
+	void reset();
+	float getP();
+	float getI();
+	float getD();
+	float get_dt();
+	void setP(float p);
+	void setI(float i);
+	void setD(float d);	
+	void set_dt(float dt_);	
+	void setIntLimit(float intLimit);	
 };
-
-

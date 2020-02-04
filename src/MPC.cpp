@@ -1,6 +1,41 @@
+/**
+ * @file MPC.cpp
+ * @author Swapneel Naphade (naphadeswapneel@gmail.com)
+ * @brief UAV Non-linear Model Predicitve Control Problem formulation and solution
+ * @version 0.1
+ * @date 01-05-2020
+ * 
+ *  Copyright (c) 2020 Swapneel Naphade
+ * 
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ * 
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ * 
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 #include "racing_drone/MPC.hpp"
 
-//Position constraints
+/**
+ * @brief Position constraint Definition
+ * 
+ * @param x Optimization Vector [x0, y0, z0, vx0, vy0, vz0, pitch0, roll0, T0, ..., xN, yN, zN, vxN, vyN, vzN, pitchN, rollN, TN]
+ * @param grad Gradient Vector
+ * @param pos_const_data Position constraint data
+ * @return double Constraint residue
+ */
 double dynamic_constraint_position(const std::vector<double> &x, std::vector<double> &grad, void *pos_const_data)
 { 
 	pos_const_struct *pos_struct = reinterpret_cast<pos_const_struct*>(pos_const_data);
@@ -21,7 +56,14 @@ double dynamic_constraint_position(const std::vector<double> &x, std::vector<dou
 	return -x[Ns*ind+k] + x[Ns*(ind-1)+k] + x[Ns*(ind-1)+k+3] * dt;
 }
 
-//Velocity constraints
+/**
+ * @brief Velocity constraint Definition
+ * 
+ * @param x Optimization Vector [x0, y0, z0, vx0, vy0, vz0, pitch0, roll0, T0, ..., xN, yN, zN, vxN, vyN, vzN, pitchN, rollN, TN]
+ * @param grad Gradient Vector
+ * @param vel_const_data Velocity constraint data
+ * @return double Constraint residue
+ */
 double dynamic_constraint_velocity(const std::vector<double> &x, std::vector<double> &grad, void *vel_const_data)
 { 
 	vel_const_struct* vel_struct = reinterpret_cast<vel_const_struct*>(vel_const_data);
@@ -30,18 +72,18 @@ double dynamic_constraint_velocity(const std::vector<double> &x, std::vector<dou
 	double dt = vel_struct->dt;
 	double psi = vel_struct->psi;
 	unsigned int Ns = vel_struct->Ns;
-	double drag_term = 0.005;
+	double drag_term = 0.05;
 		
 	//std::cout << "In vel const function" << std::endl;
 	
 	switch(k)
 	{
-		case 3:
+		case 3:  // vx
 		if(!grad.empty())
 		{
 			std::fill(grad.begin(), grad.end(), 0.0);
 			grad[Ns*i+k] = -1.0;
-			grad[Ns*(i-1)+k] = 1.0 - drag_term * std::abs(x[Ns*(i-1)+k]) * dt;
+			grad[Ns*(i-1)+k] = 1.0 - 2.0 * drag_term * std::abs(x[Ns*(i-1)+k]) * dt;
 			grad[Ns*(i-1) + Ns-3] = x[Ns*(i-1) + Ns-1] * ( std::cos(x[Ns*(i-1) + Ns-2]) * std::cos(x[Ns*(i-1) + Ns-3]) * std::cos(psi) ) * dt;
 			grad[Ns*(i-1) + Ns-2] = x[Ns*(i-1) + Ns-1] * ( std::cos(x[Ns*(i-1) + Ns-2]) * std::sin(psi) - std::sin(x[Ns*(i-1) + Ns-2]) * std::sin(x[Ns*(i-1) + Ns-3]) * std::cos(psi) ) * dt;
 			grad[Ns*(i-1) + Ns-1] = ( std::sin(x[Ns*(i-1) + Ns-2]) * std::sin(psi) + std::cos(x[Ns*(i-1) + Ns-2]) * std::sin(x[Ns*(i-1) + Ns-3]) * std::cos(psi) ) * dt;
@@ -54,7 +96,7 @@ double dynamic_constraint_velocity(const std::vector<double> &x, std::vector<dou
 				);
 		break;
 		
-		case 4:
+		case 4: // vy
 		if(!grad.empty())
 		{
 			std::fill(grad.begin(), grad.end(), 0.0);
@@ -72,7 +114,7 @@ double dynamic_constraint_velocity(const std::vector<double> &x, std::vector<dou
 				);
 		break;
 		
-		case 5:
+		case 5: // vz
 		if(!grad.empty())
 		{
 			std::fill(grad.begin(), grad.end(), 0.0);
@@ -91,34 +133,46 @@ double dynamic_constraint_velocity(const std::vector<double> &x, std::vector<dou
 		break;
 		
 		default:
-		return -1;
+		return 0;
 		break;
 	}
 	
 }
 
 
-//Endpoint constraints
+/**
+ * @brief End point constraint Definition
+ * 
+ * @param x Optimization Vector [x0, y0, z0, vx0, vy0, vz0, pitch0, roll0, T0, ..., xN, yN, zN, vxN, vyN, vzN, pitchN, rollN, TN]
+ * @param grad Gradient Vector
+ * @param ep_const_data End-point constraint data
+ * @return double Constraint residue
+ */
 double end_point_constraints(const std::vector<double> &x, std::vector<double> &grad, void* ep_const_data)
 {
 	end_pnt_const_struct* ep_data = reinterpret_cast<end_pnt_const_struct* >(ep_const_data);
 	unsigned int ind = ep_data->i;
 	double val = ep_data->x;
-		
-	// std::cout << "In end point const function, before grad i,k: " << ep_data->i << ", " << ep_data->x << std::endl;
 	
 	if(!grad.empty())
 	{
 		std::fill(grad.begin(), grad.end(), 0.0);
 		grad[ind] = 1.0;
 	}
-	// std::cout << "In end point const function, after grad i,k: " << ind << ", " << val << std::endl;
+
 	return x[ind] - val;
 }
 
 
 
-// Cost function
+/**
+ * @brief Cost Function Definition [xQx.T + uRu.T]
+ * 
+ * @param x Optimization Vector [x0, y0, z0, vx0, vy0, vz0, pitch0, roll0, T0, ..., xN, yN, zN, vxN, vyN, vzN, pitchN, rollN, TN]
+ * @param grad Gradient Vector
+ * @param pos_const_data Position constraint data
+ * @return double Constraint residue
+ */
 double cost_function(const std::vector<double> &x, std::vector<double> &grad, void* cost_func_data)
 {
 	std::vector<double> *q_ref = reinterpret_cast<std::vector<double>*>(cost_func_data);
@@ -127,13 +181,13 @@ double cost_function(const std::vector<double> &x, std::vector<double> &grad, vo
 	std::vector<double> ref(Ns);
 	std::copy(q_ref->begin(), q_ref->end() - Ns, Q.begin());
 	std::copy(q_ref->begin() + Ns, q_ref->end(), ref.begin());
-	
-	//std::cout << "In cost function" << std::endl;
-	
 	double cost = 0.0;
-	
 	unsigned int N = x.size() / Ns;
-	
+
+	// std::cout << "In MPC cost function N: " << N << ", Ns: " << Ns << std::endl;
+	// ROS_INFO("\nReference x: %f, y: %f, z: %f\n vx: %f, vy: %f, vz: %f\n R: %f, P: %f, T: %f\n", ref[0], ref[1], ref[2],
+	// 			ref[3], ref[4], ref[5], ref[6], ref[7], ref[8]);
+
 	if(!grad.empty())
 		for(unsigned int i=0; i < N; i++)
 			for(unsigned int k=0; k < Ns; k++)
@@ -143,21 +197,52 @@ double cost_function(const std::vector<double> &x, std::vector<double> &grad, vo
 		for(unsigned int k=0; k < Ns; k++)
 			cost += (x[Ns*i + k] - ref[k]) * (x[Ns*i + k] - ref[k]) * Q[k];
 	
-	// std::cout << "Cost: " << cost << std::endl;
+	cost += 500.0;
+	// std::cout << "\nCost: " << cost << std::endl;
 	return cost;
 }
 
 //state: x0, y0, z0, vx0, vy0, vz0, th0, phi0, T0, ..., xN, yN, zN, vxN, vyN, vzN, thN, phiN, TN,   : 9*N states
 
-MPC::MPC(unsigned int n, std::vector<double> p, double dt_): N(n), P(p), dt(dt_)
+/**
+ * @brief Construct a new MPC::MPC object
+ * 
+ * @param n Prediction horizon
+ * @param p State and Control Input penalties (1-by-9 vector)
+ * @param dt_ Time step (in seconds)
+ */
+MPC::MPC(unsigned int n, std::vector<double> p, double dt_, double maxAng, double maxThrust)
+		: N(n), P(p), dt(dt_), max_angle(std::abs(maxAng)), max_thrust_accel(std::abs(maxThrust))
 {
     Ns = 9;
     sol_x.resize(N*Ns);
+
+	if( max_thrust_accel > 50 )
+		max_thrust_accel = 50;
+	
+	if( max_thrust_accel < 10 )
+		max_thrust_accel = 10;
+
+	if( max_angle > 85 )
+		max_angle = 85;
 }
 
+/**
+ * @brief Destroy the MPC::MPC object
+ * 
+ */
 MPC::~MPC(){}
 
-int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
+
+/**
+ * @brief Solve the optimization problem using SLSQP method
+ * 
+ * @param x0 Initial State
+ * @param xN Reference State
+ * @param psi Current yaw angle
+ * @return int 0 for success and 1 for failure of optimization
+ */
+int MPC::optimize(std::vector<double>& x0, std::vector<double>& xN, double& psi)
 {
     // auto start = std::chrono::system_clock::now();
 	// unsigned int Ns = 9; //States
@@ -173,32 +258,37 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 	
 	nlopt::opt OPT(nlopt::LD_SLSQP, Ns*N);
 	
-	std::vector<double> Q_ref(2*Ns); //Penalties for states and inputs (Ns) and reference (Ns)
-	std::copy(P.begin(), P.end(), Q_ref.begin()); // Fill all penalties with P
-	std::copy(xN.begin(), xN.end(), Q_ref.begin() + Ns); // Copy reference in the cost func input data
+	std::vector<double> P_ref(2*Ns); //Penalties for states and inputs (Ns) and reference (Ns)
+	std::copy(P.begin(), P.end(), P_ref.begin()); // Fill all penalties with P
+	std::copy(xN.begin(), xN.end(), P_ref.begin() + Ns); // Copy reference in the cost func input data
 	
 	//set Cost function
-	OPT.set_min_objective(cost_function, &Q_ref);
+	OPT.set_min_objective(cost_function, &P_ref);
 	
  
 	// Upper and Lower bounds
 	std::vector<double> lb(Ns*N);
 	std::vector<double> ub(Ns*N);
-	std::fill(lb.begin(), lb.end(), -100.0);
-	std::fill(ub.begin(), ub.end(), 100.0);
+	std::fill(lb.begin(), lb.end(), -50.0);
+	std::fill(ub.begin(), ub.end(), 50.0);
 	
+
 	for(unsigned int i = 0; i < N; i++)
 	{
 		// Input angle bounds
 		for(unsigned int k = Ns-3; k < Ns-1; k++)
 		{
-			lb[Ns*i + k] = -30.0 * PI / 180.0;
-			ub[Ns*i + k] =  30.0 * PI / 180.0;
+			lb[Ns*i + k] = -max_angle * PI / 180.0;
+			ub[Ns*i + k] =  max_angle * PI / 180.0;
 		}
 		
 		//Thrust bounds
-		lb[Ns*i + Ns-1] = 0.0;
-		ub[Ns*i + Ns-1] = 15.0;
+		lb[Ns*i + 8] = 0.0;
+		ub[Ns*i + 8] = max_thrust_accel;
+
+		//Altitude bounds
+		lb[Ns*i + 2] = 0.0;
+		ub[Ns*i + 2] = 20.0;
 		
 	}
 	OPT.set_lower_bounds(lb);
@@ -259,6 +349,6 @@ int MPC::optimize(std::vector<double> x0, std::vector<double> xN, double psi)
 	{
 		std::cout << "nlopt failed: " << e.what() << std::endl;
 		sol_x = tmp;
-		return EXIT_SUCCESS;
+		return EXIT_FAILURE;
 	}
 }

@@ -1,3 +1,31 @@
+/**
+ * @file MPC.hpp
+ * @author Swapneel Naphade (naphadeswapneel@gmail.com)
+ * @brief UAV Model Predictive Control class declaration
+ * @version 0.1
+ * @date 01-05-2020
+ * 
+ *  Copyright (c) 2020 Swapneel Naphade
+ * 
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ * 
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ * 
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 #pragma once
 
 #include <iostream>
@@ -5,8 +33,10 @@
 #include <cmath>
 #include <nlopt.hpp>
 #include <nlopt.h>
+#include <ros/ros.h>
 
 #define PI 3.14159265359
+#define G 9.80
 
 typedef struct{
 	unsigned int i, k, N, Ns;
@@ -33,12 +63,14 @@ class MPC
     public:
         unsigned int N;  //Prediction horizon
         unsigned int Ns; //Number of states: 9
-        std::vector<double> sol_x; //Optimization State Vector
+        std::vector<double> sol_x; //Optimization State Vector -> x,y,z,vx,vy,vz,pitch,roll,thrust
         std::vector<double> P;  //Cost penalty weights
         double dt; //Prediction Time step
+        double max_angle;
+        double max_thrust_accel;
 
-        MPC(unsigned int n, std::vector<double> p, double dt_);
+        MPC(unsigned int n, std::vector<double> p, double dt_, double maxAng, double maxThrust);
         ~MPC();
 
-        int optimize(std::vector<double> x0, std::vector<double> xN, double psi);
+        int optimize(std::vector<double>& x0, std::vector<double>& xN, double& psi);
 };

@@ -1,0 +1,48 @@
+gate_detector:
+    gateSide: 1.5
+    hsv_low_thresh: [ 0, 50, 50 ] 
+    hsv_high_thresh: [ 50, 255, 255 ]
+    blur_kernel: 5
+    area_thresh: 1000
+    aspect_ratio_low: 0.4
+    roi_mean_thresh: 50
+    gate_dist_thresh: 20
+    cameraMatrix: [ 700, 0.0, 640, 0.0, 700, 360, 0.0, 0.0, 1.0 ]
+    distCoeffs: [ -0.174, 0.0283, 0.0, 0.0, 0.0 ]
+    meas_noise_variance: [ 5, 5, 5 ]
+    process_noise_variance: [ 1, 1, 1 ]
+    EKFrate: 100
+    rawGatePubTopic: "/gate_detector/raw_gate_pose"
+    filteredGatePubTopic: "/gate_detector/filtered_gate_pose"
+    odomSubTopic: "/ground_truth/state"
+    imageTopic: "/ardrone/stereo/rgb/image_raw" 
+    imuTopic: "/ardrone/imu"
+
+    # Blue gate    
+    #hsv_thresh_low = (110, 5, 100)
+    #hsv_thresh_high = (150, 255, 255)
+    
+    # Green gate
+    #hsv_thresh_low = (40, 10, 100)
+    #hsv_thresh_high = (90, 255, 255)
+    
+    # Green gate rgb
+    #hsv_thresh_low = (100, 200, 100)
+    #hsv_thresh_high = (255, 255, 255)
+    
+    # Red gate
+    #hsv_thresh_low = (130, 40, 30)
+    #hsv_thresh_high = (200, 255, 255)
+    
+    # Orange gate
+    #hsv_thresh_low = (0, 100, 100)
+    #hsv_thresh_high = (40, 255, 255)
+    
+    # Orange gate BGR
+    #hsv_thresh_low = (92, 92, 157)
+    #hsv_thresh_high = (196, 202, 206)
+
+    # LED light Gate
+    # hsv_low_thresh: [ 0, 0, 50 ] 
+    # hsv_high_thresh: [ 120, 255, 255 ]
+    

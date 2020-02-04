@@ -1,9 +1,9 @@
 /**
- * @file state_estimator_core.hpp
+ * @file MAF.hpp
  * @author Swapneel Naphade (naphadeswapneel@gmail.com)
- * @brief state_estimator_core declaration 
+ * @brief Moving Average Filter class declaration
  * @version 0.1
- * @date 01-05-2020
+ * @date 01-18-2020
  * 
  *  Copyright (c) 2020 Swapneel Naphade
  * 
@@ -27,38 +27,25 @@
  */
 
 #pragma once
+#include <iostream>
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/numeric/ublas/io.hpp>
+#include <queue>
 
-#include <ros/ros.h>
-#include <ros/time.h>
-#include <nav_msgs/Odometry.h>
-#include "racing_drone/KalmanFilter.hpp"
-
-using namespace RD;
-
-class StateEstimator
+namespace ublas = boost::numeric::ublas;
+class MovAvgFilter
 {
-public:
-    ros::NodeHandle nh;
-    ros::NodeHandle pnh;
-	ros::Publisher odomPublisher;
-	ros::Subscriber odomSubscriber;
-	ros::Timer estimatorLoopTimer;
-	std::string pubTopic;
-	std::string subTopic;
-	int rate;
-	KalmanFilter KF;
-	nav_msgs::Odometry odomOut;
-	
-	StateEstimator(const ros::NodeHandle &node_handle,
-					const std::string& pub_topic,
-					const std::string& sub_topic,
-					int rt, KalmanFilter kf);
-	~StateEstimator();
-	
-	void init(void);
-	void odomCallback(const nav_msgs::Odometry::ConstPtr& odom);
-	void estimatorLoopTimerCallback(const ros::TimerEvent& timerEvent);
-	void publishOdometry(void);
+    private:
+    int window;
+    int n;
+    std::queue<ublas::vector<double>> valQ;
+    ublas::vector<double> input;
+    ublas::vector<double> output;
+    ublas::vector<double> sumVec;
+
+    public:
+    MovAvgFilter(int win_, int n_);
+    ~MovAvgFilter();
+    ublas::vector<double> update(ublas::vector<double>& inVec);
+    void reset(void);
 };
-
-

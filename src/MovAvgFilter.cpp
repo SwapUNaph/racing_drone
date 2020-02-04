@@ -1,9 +1,9 @@
 /**
- * @file state_estimator_core.hpp
+ * @file MovAvgFilter.cpp
  * @author Swapneel Naphade (naphadeswapneel@gmail.com)
- * @brief state_estimator_core declaration 
+ * @brief Moving Average Filter class definition
  * @version 0.1
- * @date 01-05-2020
+ * @date 01-18-2020
  * 
  *  Copyright (c) 2020 Swapneel Naphade
  * 
@@ -26,39 +26,53 @@
  *  SOFTWARE.
  */
 
-#pragma once
+#include "racing_drone/MovAvgFilter.hpp"
 
-#include <ros/ros.h>
-#include <ros/time.h>
-#include <nav_msgs/Odometry.h>
-#include "racing_drone/KalmanFilter.hpp"
-
-using namespace RD;
-
-class StateEstimator
+MovAvgFilter::MovAvgFilter(int win_, int n_) : window(win_), n(n_)
 {
-public:
-    ros::NodeHandle nh;
-    ros::NodeHandle pnh;
-	ros::Publisher odomPublisher;
-	ros::Subscriber odomSubscriber;
-	ros::Timer estimatorLoopTimer;
-	std::string pubTopic;
-	std::string subTopic;
-	int rate;
-	KalmanFilter KF;
-	nav_msgs::Odometry odomOut;
-	
-	StateEstimator(const ros::NodeHandle &node_handle,
-					const std::string& pub_topic,
-					const std::string& sub_topic,
-					int rt, KalmanFilter kf);
-	~StateEstimator();
-	
-	void init(void);
-	void odomCallback(const nav_msgs::Odometry::ConstPtr& odom);
-	void estimatorLoopTimerCallback(const ros::TimerEvent& timerEvent);
-	void publishOdometry(void);
-};
+    input.resize(n);
+    output.resize(n);
+    sumVec.resize(n);
 
+    for(int i=0; i<n; i++)
+    {
+        input(i) = 0.0;
+        output(i) = 0.0;
+        sumVec(i) = 0.0;
+    }
+}
 
+MovAvgFilter::~MovAvgFilter(){}
+
+ublas::vector<double> MovAvgFilter::update(ublas::vector<double>& inVec)
+{
+    input = inVec;  
+    if( valQ.size() >= window )
+    {
+        sumVec -= valQ.front();
+        valQ.pop();
+    }   
+
+    sumVec += input;
+    valQ.push(input);
+
+    if(valQ.size() != 0)
+        output = sumVec / valQ.size();
+
+    // std::cout << "Input: " << input << ", Output: " << output << std::endl;
+
+    return output;
+}
+
+void MovAvgFilter::reset(void)
+{
+    for(int i=0; i<n; i++)
+    {
+        input(i) = 0.0;
+        output(i) = 0.0;
+        sumVec(i) = 0.0;
+    }
+
+    while( !valQ.empty() )
+        valQ.pop();
+}

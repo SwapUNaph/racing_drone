@@ -3,13 +3,14 @@ project(racing_drone)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
-add_compile_options(-lnlopt)
-add_compile_options(-lm)
+
+#set(OpenCV_DIR "/usr/local/lib/cmake/opencv4")
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  #generate_messages
   geometry_msgs
   mavros_msgs
   nav_msgs
@@ -18,7 +19,10 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   tf
+  cv_bridge
 )
+
+find_package(OpenCV REQUIRED )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -54,11 +58,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+ add_message_files(
+   FILES
+   DroneState.msg
+ )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -75,10 +78,13 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   mavros_msgs#   nav_msgs#   sensor_msgs#   std_msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   geometry_msgs
+   racing_drone
+   std_msgs
+   nav_msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -112,7 +118,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include/racing_drone
   #LIBRARIES racing_drone
-#  CATKIN_DEPENDS geometry_msgs mavros_msgs nav_msgs roscpp rospy sensor_msgs std_msgs
+    CATKIN_DEPENDS geometry_msgs mavros_msgs nav_msgs roscpp rospy sensor_msgs std_msgs
 #  DEPENDS system_lib
 )
 
@@ -123,12 +129,17 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
- include
+  include
+  ${OpenCV_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
   /usr/local/include
 )
 
 ## Declare a C++ library
+ add_library(common
+   src/common.cpp
+ )
+ 
  add_library(state_estimator_core
    src/state_estimator_core.cpp
  )
@@ -144,10 +155,30 @@ include_directories(
  add_library(mpc
    src/MPC.cpp
  )
+ 
+add_library(maf
+   src/MovAvgFilter.cpp
+ )
+ add_library(pid
+   src/PID.cpp
+ )
 
- #add_library(nlopt
- #/usr/local/include/nlopt.hpp
- #)
+ add_library(gate_detector_class
+   src/GateDetector.cpp
+ )
+
+ add_library(gate_detector_core
+   src/gate_detector_core.cpp
+ )
+
+  add_library(localizer_core
+   src/localizer_core.cpp
+  )
+
+  add_library(state_machine_core
+  src/state_machine_core.cpp
+  )
+
 
 
 
@@ -161,7 +192,16 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 
  add_executable(state_estimator src/state_estimator.cpp)
+
  add_executable(controller src/controller.cpp)
+
+ add_executable(gate_detector src/gate_detector.cpp)
+
+ add_executable(camera src/camera.cpp)
+
+ add_executable(localizer src/localizer.cpp) 
+
+ add_executable(state_machine src/state_machine.cpp) 
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -178,6 +218,7 @@ include_directories(
  	state_estimator
  	state_estimator_core
  	kalman_filter
+  common
   ${catkin_LIBRARIES}
  )
  
@@ -185,9 +226,46 @@ include_directories(
   controller
   controller_core
   mpc
+  pid
+  common
   /usr/local/lib/libnlopt.so
   ${catkin_LIBRARIES}
  )
+
+  target_link_libraries(
+ 	localizer
+  localizer_core
+  common
+  ${catkin_LIBRARIES}
+  )
+
+  target_link_libraries(
+  gate_detector
+  gate_detector_core
+  gate_detector_class
+  kalman_filter
+  maf
+  common
+  ${OpenCV_LIBS}
+  ${catkin_LIBRARIES}
+ )
+
+target_link_libraries(
+  camera
+  common
+  ${OpenCV_LIBS}
+  ${catkin_LIBRARIES}
+ )
+
+target_link_libraries(
+  state_machine
+  state_machine_core
+  common
+  ${catkin_LIBRARIES}
+ )
+
+
+  
 
 #############
 ## Install ##
