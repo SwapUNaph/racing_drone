@@ -22,7 +22,7 @@
   <rosparam command="load" file="$(find racing_drone)/params/controller_sim.yaml" />
   <!-- <rosparam param="/controller/bebop">false</rosparam> -->
 
-  <rosparam command="load" file="$(find racing_drone)/params/gate_detector.yaml" />
+  <rosparam command="load" file="$(find racing_drone)/params/gate_detector_sim.yaml" />
   <rosparam command="load" file="$(find racing_drone)/params/localizer.yaml" />
 
   <!-- Launch state_estimator node -->

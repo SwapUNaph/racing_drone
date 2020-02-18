@@ -1,7 +1,7 @@
 localizer:
 
   # Gain of gate measurements in complimentary filter (0.01 < gain < 1.0)
-  measGain: 0.01
+  measGain: 0.2
 
   # gates = [ x0, y0, z0, vx0, vy0, vz0, yaw0,
   #           x1, y1, z1, vx1, vy1, vz1, yaw1,
