@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!--
+<author>Swapneel Naphade</author>
+<email>snaphade@umd.edu</email>
+<version>3.0</version>
+-->
+
+<launch>
+    
+  <!-- Bebop driver -->
+  <!-- <include file="$(find bebop_driver)/launch/bebop_node.launch"> -->
+  
+  <!-- Mavros driver -->
+  <include file="$(find mavros)/launch/apm.launch" />
+
+  <!-- Load parameters -->
+  <!-- <rosparam command="load" file="$(find racing_drone)/params/state_estimator.yaml" /> -->
+  <!-- <rosparam command="load" file="$(find racing_drone)/params/controller.yaml" /> -->
+  <!-- <rosparam command="load" file="$(find racing_drone)/params/gate_detector.yaml" /> -->
+  <!-- <rosparam command="load" file="$(find racing_drone)/params/localizer.yaml" /> -->
+  
+  <!-- Launch mavros joystick receive node -->
+  <node pkg="racing_drone" type="mavros_joystick_control" name="mavros_joystick_control" output='screen' />
+
+  <!-- Launch state_estimator node -->
+  <!-- <node pkg="racing_drone" type="state_estimator" name="state_estimator"  output='screen'/> -->
+
+  <!-- Launch controller node -->
+  <!-- <node pkg="racing_drone" type="controller" name="controller" output='screen' /> -->
+
+  <!-- Launch gate_detector node -->
+  <!-- <node pkg="racing_drone" type="gate_detector" name="gate_detector"  /> -->
+
+  <!-- Launch localizer node -->
+  <!-- <node pkg="racing_drone" type="localizer" name="localizer"  /> -->
+
+  <!-- Launch state_machine node -->
+  <!-- <node pkg="racing_drone" type="state_machine" name="state_machine"  output='screen'/> -->
+
+  <!-- Launch rqt_plot -->
+  <!-- <node type="rqt_plot" name="rqt_plot" pkg="rqt_plot" /> -->
+
+  <!-- Launch RVIZ -->
+  <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find racing_drone)/rviz/racing_drone.rviz" /> -->
+
+</launch>
