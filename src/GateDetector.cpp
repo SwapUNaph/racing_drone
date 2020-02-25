@@ -62,7 +62,7 @@ bool compareContourArea(vector<Point> a, vector<Point> b)
 double aspectRatio(const vector<Point>& contour)
 {
 	Rect boundRect( boundingRect(contour));
-	return (double) (boundRect.width / boundRect.height);
+	return (double) (boundRect.height / boundRect.width);
 }
 
 /**
@@ -118,9 +118,9 @@ GateDetector::~GateDetector(){}
  */
 bool GateDetector::detectGate(Mat& image){
 	
-    clock_t start_time = clock();
-    static int frame_count;
-    frame_count++;
+    // clock_t start_time = clock();
+    // static int frame_count;
+    // frame_count++;
      
 	// ROS_INFO( "before bgr2hsv " );
     // Mat hsv, mask, blur;
@@ -139,18 +139,20 @@ bool GateDetector::detectGate(Mat& image){
 
 	// ROS_INFO( "before find contours " );
 	//Find contours
-    vector<vector<Point>> contours;
+    //vector<vector<Point>> contours;
     vector<Vec4i> hierarchy;
-	findContours( image, contours, hierarchy, CV_RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0) );
+	findContours( image, detectedContours, hierarchy, CV_RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0) );
+	// ROS_INFO("Number of contours in image: %d", detectedContours.size());
 
     vector<vector<Point>> allContours;
-	for (uint i=0; i<contours.size(); i++){
+	for (uint i=0; i<detectedContours.size(); i++){
 		vector<Point> approx;
-        approxPolyDP(contours[i], approx, 0.01f * arcLength(contours[i], true), true);
+        approxPolyDP(detectedContours[i], approx, 0.01f * arcLength(detectedContours[i], true), true);
 		if (approx.size() == 4){
 			allContours.push_back(approx);
         }
     }
+	// ROS_INFO("Number of contours after polyApprox: %d", allContours.size());
     
 	for(auto itr = allContours.begin(); itr != allContours.end(); )
 	{
@@ -159,9 +161,10 @@ bool GateDetector::detectGate(Mat& image){
 		else
 			itr++;
 	}
+	// ROS_INFO("Number of contours after Area thresh: %d", allContours.size());
 	
     if (aspect_ratio_low > 1.0 || aspect_ratio_low < 0.05)
-        aspect_ratio_low = 0.5;
+        aspect_ratio_low = 0.2;
 
 	// Filter by contour aspect ratio: 1.20 > AR > 0.8
 	for(auto itr = allContours.begin(); itr != allContours.end(); )
@@ -171,6 +174,7 @@ bool GateDetector::detectGate(Mat& image){
 		else
 			itr++;
 	}
+	// ROS_INFO("Number of contours after aspect ratio: %d", allContours.size());
 
 	// Filter by ROI mean: ROImean < 50
 	for(auto itr = allContours.begin(); itr != allContours.end(); )
@@ -180,6 +184,7 @@ bool GateDetector::detectGate(Mat& image){
 		else
 			itr++;
 	}
+	// ROS_INFO("Number of contours after ROI mean: %d\n\n", allContours.size());
 
 	for(int i=0; i < allContours.size(); i++)
 	// std::cout << frame_count << "[" << i << "]: " << contourArea(allContours[i]) << std::endl; 

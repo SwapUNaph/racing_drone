@@ -45,7 +45,7 @@ GateDetectorCore::GateDetectorCore(ros::NodeHandle &node_handle, GateDetector gd
     rawGatePosePub = nh.advertise<geometry_msgs::Pose>(rawGatePubTopic, 5);
     filteredGatePosePub = nh.advertise<geometry_msgs::Pose>(filteredGatePubTopic, 5);
     successPub = nh.advertise<std_msgs::Bool>("/gate_detector/success", 5);
-    gateImagePub = nh.advertise<sensor_msgs::Image>("gate_detector/gate_image", 2);
+    gateImagePub = nh.advertise<sensor_msgs::Image>("/gate_detector/gate_image", 2);
 
     odomSub = nh.subscribe(odomSubTopic, 5, &GateDetectorCore::odomCallback, this);
     imageSub = nh.subscribe(imageOutTopic, 2, &GateDetectorCore::imageCallback, this);
@@ -171,7 +171,9 @@ void GateDetectorCore::updateGatePose(Mat& img)
         rawMarkerPub.publish(rawGateMarker);
 
         success.data = true;
+        drawContours(imgCopy, gd.detectedContours, -1, Scalar(0,255,0), 2, 8);
         drawContours(imgCopy, std::vector<std::vector<Point>>(1,gd.gateContour), -1, Scalar(255,0,0), 4, 8);
+
     }
     else
     {

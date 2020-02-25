@@ -63,6 +63,7 @@ class GateDetector
 
 
     std::vector<Point> gateContour;
+    std::vector<std::vector<Point>> detectedContours;
     std::vector<double> tvec;
     std::vector<double> rvec;
 

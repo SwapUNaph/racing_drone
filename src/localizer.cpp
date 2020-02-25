@@ -62,6 +62,7 @@ int main(int argc, char** argv)
     }
 
     Localizer localizer(nh, odomSubTopic, odomPubTopic, gatePoseSubTopic, gates, measGain);
+    GateVisual gateVis(nh, gates);
 
     //Wait for other nodes to initialize
     ros::Rate sleepRate(1.0);

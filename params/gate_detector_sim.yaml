@@ -1,11 +1,11 @@
 gate_detector:
     gateSide: 1.5
-    hsv_low_thresh: [ 0, 200, 120 ] 
-    hsv_high_thresh: [ 30, 255, 255 ]
+    hsv_low_thresh: [ 0, 120, 0 ] 
+    hsv_high_thresh: [ 40, 255, 255 ]
     blur_kernel: 5
-    area_thresh: 3000
-    aspect_ratio_low: 0.5
-    roi_mean_thresh: 200
+    area_thresh: 1000
+    aspect_ratio_low: 0.8
+    roi_mean_thresh: 100
     gate_dist_thresh: 20
     cameraMatrix: [ 700, 0.0, 640, 0.0, 700, 360, 0.0, 0.0, 1.0 ]
     distCoeffs: [ -0.174, 0.0283, 0.0, 0.0, 0.0 ]

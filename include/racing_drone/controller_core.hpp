@@ -46,6 +46,7 @@ class Controller
 	ros::Subscriber refSubscriber; // Reference Input subscriber
 	ros::Subscriber odomSubscriber; // Odometery subscriber
 	ros::Subscriber enCtrlSubscriber; // Enable Control subscriber
+	ros::Subscriber nextGateSubscriber; // Next Gate subscriber
 	ros::Timer controlTimer; // Control compute and publish timer
 	ros::NodeHandle nh; // Node handle
 	std::string odomSubTopic;
@@ -60,6 +61,7 @@ class Controller
 	std::vector<double> currState; // x,y,z,vx,vy,vz,roll,pitch,yaw
 	geometry_msgs::Pose refPose; // Reference pose
 	std::vector<double> refState; // x,y,z,vx,vy,vz,roll,pitch,yaw
+	racing_drone::DroneState next_gate; // Next gate coordinates
 	std::mutex state_mutex; // Mutex for locking currState access
 	bool enable_control;
 	bool bebop;
@@ -73,6 +75,7 @@ public:
 	void refCallback(const racing_drone::DroneState::ConstPtr& refDroneState); // Reference Callback for updating reference Pose
 	void controllerTimerCallback(const ros::TimerEvent& timerEvent);
 	void enCtrlCallback(const std_msgs::Bool::ConstPtr& enCtrl);
+	void nextGateCallback(const racing_drone::DroneState::ConstPtr& nextGate);
 	void computeControlInput(void); // Compute Control Input by MPC optimization
 	void publishControlInput(void); // Publish Control Input 
 

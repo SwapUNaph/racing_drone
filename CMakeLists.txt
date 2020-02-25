@@ -10,7 +10,6 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  #generate_messages
   geometry_msgs
   mavros_msgs
   nav_msgs
@@ -20,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
   cv_bridge
+  message_generation
 )
 
 find_package(OpenCV REQUIRED )
@@ -81,9 +81,9 @@ find_package(OpenCV REQUIRED )
  generate_messages(
    DEPENDENCIES
    geometry_msgs
-   racing_drone
    std_msgs
    nav_msgs
+   mavros_msgs
  )
 
 ################################################
@@ -116,9 +116,9 @@ find_package(OpenCV REQUIRED )
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include/racing_drone
+  #INCLUDE_DIRS include/racing_drone
   #LIBRARIES racing_drone
-    CATKIN_DEPENDS geometry_msgs mavros_msgs nav_msgs roscpp rospy sensor_msgs std_msgs
+    CATKIN_DEPENDS message_runtime geometry_msgs mavros_msgs nav_msgs roscpp rospy sensor_msgs std_msgs 
 #  DEPENDS system_lib
 )
 
@@ -134,6 +134,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   /usr/local/include
 )
+
 
 ## Declare a C++ library
  add_library(common
@@ -202,6 +203,8 @@ add_library(maf
  add_executable(localizer src/localizer.cpp) 
 
  add_executable(state_machine src/state_machine.cpp) 
+ 
+ #add_dependencies(racing_drone ${catkin_EXPORTED_TARGETS})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

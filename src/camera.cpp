@@ -82,7 +82,7 @@ class Camera
 int main(int argc, char **argv)
 {  
   // Set up ROS.
-  ros::init(argc, argv, "state_estimator");
+  ros::init(argc, argv, "camera");
   
   std::string imageTopic = "/camera/image_raw";
 
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
   Camera camera;
 
   // Main loop.
-  while (1)
+  while (ros::ok())
   {
       if( !camera.captureImage() )
         continue;

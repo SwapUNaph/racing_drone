@@ -30,7 +30,7 @@
 #include <racing_drone/localizer_core.hpp>
 #include "common.cpp"
 
-Localizer::Localizer(ros::NodeHandle nh_, std::string odomSubTopic_, std::string odomPubTopic_, std::string gatePoseTopic_,
+Localizer::Localizer(ros::NodeHandle& nh_, std::string odomSubTopic_, std::string odomPubTopic_, std::string gatePoseTopic_,
               std::vector<racing_drone::DroneState> gates_, double measGain_)
               : nh(nh_), odomSubTopic(odomSubTopic_), odomPubTopic(odomPubTopic_),
                 gatePoseTopic(gatePoseTopic_), gates(gates_), measGain(measGain_)
@@ -205,4 +205,54 @@ void Localizer::publishDroneState(void)
 void Localizer::gdSuccessCallback(const std_msgs::Bool::ConstPtr& succ)
 {
     gdSuccess = succ->data;
+}
+
+/////////////////////////// GATE VISUALS ///////////////////////////////////
+
+GateVisual::GateVisual(ros::NodeHandle& nh_, std::vector<racing_drone::DroneState> gates_) : nh(nh_), gates(gates_)
+{
+    gateMarkerPublisher = nh.advertise<visualization_msgs::MarkerArray>("/gate_marker_array", 5);
+    markerTimer = nh.createTimer(ros::Duration(5), &GateVisual::publishGateMarkersCallback, this);
+    visualization_msgs::Marker baseMarker;
+    baseMarker.type  = visualization_msgs::Marker::CUBE;
+    baseMarker.header.frame_id = "map";
+    baseMarker.color.r = 255.0f;
+    baseMarker.color.g = 0.0f;
+    baseMarker.color.b = 0.0f;
+    baseMarker.color.a = 0.50;  
+    baseMarker.scale.x = 0.20;
+    baseMarker.scale.y = 1.0;
+    baseMarker.scale.z = 1.0;
+    baseMarker.action = visualization_msgs::Marker::ADD;
+    baseMarker.lifetime = ros::Duration();
+
+
+    for(int i=0; i<gates.size(); i++)
+    {
+        visualization_msgs::Marker gateMarker(baseMarker);
+        gateMarker.id = i;
+        gateMarker.pose.position.x = gates[i].position.x;
+        gateMarker.pose.position.y = gates[i].position.y;
+        gateMarker.pose.position.z = gates[i].position.z;
+
+        std::vector<double> gateQuat(4), gateRPY(3);
+        gateRPY[0] = 0.0;
+        gateRPY[1] = 0.0;
+        gateRPY[2] = gates[i].yaw;
+
+        rpy2quat(gateRPY, gateQuat);
+
+        gateMarker.pose.orientation.x = gateQuat[0];
+        gateMarker.pose.orientation.y = gateQuat[1];
+        gateMarker.pose.orientation.z = gateQuat[2];
+        gateMarker.pose.orientation.w = gateQuat[3];
+
+        gateMarkers.markers.push_back(gateMarker);
+    }
+
+}
+
+void GateVisual::publishGateMarkersCallback(const ros::TimerEvent& timerEvent)
+{
+    gateMarkerPublisher.publish(gateMarkers);
 }

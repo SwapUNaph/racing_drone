@@ -29,8 +29,8 @@
 #include <racing_drone/state_machine_core.hpp>
 #include "common.cpp"
 
-State::State(int id_, int nxt_id_, racing_drone::DroneState state_, STATE_CHANGE_TYPE st_ch_typ, double thshld_)
-    : id(id_), next_state_id(nxt_id_), des_state(state_), state_change_type(st_ch_typ), change_threshold(thshld_)
+State::State(int id_, int nxt_id_, racing_drone::DroneState state_, STATE_TYPE st_typ, STATE_CHANGE_TYPE st_ch_typ, double thshld_)
+    : id(id_), next_state_id(nxt_id_), des_state(state_), state_type(st_typ), state_change_type(st_ch_typ), change_threshold(thshld_)
 {
 
 }
@@ -41,6 +41,7 @@ StateMachine::StateMachine(ros::NodeHandle& nh_, std::string controlRefPubTopic_
                             autonomySubTopic(autonomySubTopic_), states(states_), state(states_[0])
 {
     controlRefPub = nh.advertise<racing_drone::DroneState>(controlRefPubTopic, 5);
+    nextGatePub = nh.advertise<racing_drone::DroneState>("/state_machine/next_gate", 5);
     odomSub = nh.subscribe(odomSubTopic, 5, &StateMachine::odomCallback, this);
     autonomySub = nh.subscribe(autonomySubTopic, 5, &StateMachine::autonomyCallback, this);
 
@@ -48,6 +49,8 @@ StateMachine::StateMachine(ros::NodeHandle& nh_, std::string controlRefPubTopic_
     time_elapsed = 0;
     lap_time = 0;
     curr_drone_state = racing_drone::DroneState();
+    curr_state_id = 0;
+    next_gate_id = 1;
 
     autonomy = true;
 }
@@ -84,7 +87,10 @@ void StateMachine::updateState(void)
     ros::Time time_now = ros::Time::now();
     time_elapsed = (time_now.toNSec() - start_time.toNSec()) / 1e9 ;
     lap_time = (time_now.toNSec() - start_lap_time.toNSec()) / 1e9 ;
+
     updateStateError();
+    findNextGate();
+    nextGatePub.publish(states[next_gate_id].des_state);
 
     bool STATE_CHANGE = false;
 
@@ -118,6 +124,7 @@ void StateMachine::updateState(void)
     if ( STATE_CHANGE )
     {
         state = states[state.next_state_id];
+        curr_state_id = state.id;
         start_time = ros::Time::now();
         time_elapsed = 0.0;
     }
@@ -141,6 +148,22 @@ void StateMachine::updateStateError(void)
 
     state_error =  dist_error; //+ 2.0 * yaw_error;
 
-    ROS_INFO( "Current State id: %d, State Error: %.2f, Time Elapsed: %.3f, Autonomy: %d", state.id, state_error, time_elapsed, autonomy );
+    ROS_INFO( "Current State id: %d, Current_Gate_id: %d, State Error: %.2f, Time Elapsed: %.3f, Autonomy: %d", state.id, next_gate_id, state_error, time_elapsed, autonomy );
     ROS_INFO( "Lap Time: %.3f s", lap_time);
+}
+
+void StateMachine::findNextGate(void)
+{
+    for(int i=curr_state_id; i<states.size(); i++)
+    {
+        if( states[i].state_type == STATE_TYPE::GATE)
+        {
+            next_gate_id = i;
+            break;
+        }
+
+        if(i == states.size()-1)
+            i = 0;
+    }
+
 }

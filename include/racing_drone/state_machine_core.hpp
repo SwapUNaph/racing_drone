@@ -38,16 +38,24 @@ enum STATE_CHANGE_TYPE
     TIME
 };
 
+
+enum STATE_TYPE
+{
+    GATE=0,
+    WAYPOINT, 
+};
+
 class State
 {
     public:
     int id;
     int next_state_id;
     racing_drone::DroneState des_state;
+    STATE_TYPE state_type;
     STATE_CHANGE_TYPE state_change_type;
     double change_threshold;
 
-    State(int id_, int nxt_id_, racing_drone::DroneState state_, STATE_CHANGE_TYPE st_ch_typ, double thshld_);
+    State(int id_, int nxt_id_, racing_drone::DroneState state_, STATE_TYPE st_typ, STATE_CHANGE_TYPE st_ch_typ, double thshld_);
 
 };
 
@@ -56,6 +64,7 @@ class StateMachine
     public:
     ros::NodeHandle nh;
     ros::Publisher controlRefPub;
+    ros::Publisher nextGatePub;
     ros::Subscriber odomSub;
     ros::Subscriber autonomySub;
 
@@ -66,6 +75,8 @@ class StateMachine
 
     std::vector<State> states;
     State state;
+    int curr_state_id;
+    int next_gate_id;
 
     racing_drone::DroneState curr_drone_state;
     ros::Time start_time;
@@ -81,6 +92,7 @@ class StateMachine
 
     void updateState(void);
     void updateStateError(void);
+    void findNextGate(void);
     void odomCallback(const nav_msgs::Odometry::ConstPtr& odom);
     void autonomyCallback(const std_msgs::Bool::ConstPtr& atnmy);
 };

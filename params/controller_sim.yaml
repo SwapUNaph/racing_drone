@@ -3,9 +3,10 @@ controller:
   prediction_horizon: 5
   prediction_time_step: 0.5
   odom_sub_topic: "/localizer/estimated_state"
+  # odom_sub_topic: "/ground_truth/state"
   ref_sub_topic: "/controller/reference"
   cmd_pub_topic: "/cmd_vel"
-  state_penalties: [ 1, 1, 5, 2, 2, 2, 0.01, 0.01, 0.01]
-  max_angle: 85 # Angle in degrees (0 < max_angle < 85)
-  max_thrust: 30 # Thrust acceleration (10 < max_thrust < 50 (~5g))
-  bebop: false # If using bebop drone make true
+  state_penalties: [ 1, 1, 10, 1, 1, 2, 2, 2, 0.01]
+  max_angle: 15 # Angle in degrees (0 < max_angle < 85)
+  max_thrust: 20 # Thrust acceleration (10 < max_thrust < 50 (~5g))
+  bebop: 0 # If using bebop drone make true

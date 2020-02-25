@@ -32,6 +32,8 @@
 #include <std_msgs/Bool.h>
 #include <racing_drone/DroneState.h>
 #include <nav_msgs/Odometry.h>
+#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/Marker.h>
 #include "KalmanFilter.hpp"
 
 
@@ -57,7 +59,7 @@ class Localizer
     std::vector<racing_drone::DroneState> gates;
     int visualGateIndex;
 
-    Localizer(ros::NodeHandle nh_, std::string odomSubTopic_, std::string odomPubTopic_, std::string gatePoseTopic_,
+    Localizer(ros::NodeHandle& nh_, std::string odomSubTopic_, std::string odomPubTopic_, std::string gatePoseTopic_,
               std::vector<racing_drone::DroneState> gates_, double measGain_);
     ~Localizer();
 
@@ -69,4 +71,16 @@ class Localizer
     double getGateDistance(racing_drone::DroneState gateState);
     void projectGatePose(void);
 
+};
+
+class GateVisual
+{
+    public:
+    GateVisual(ros::NodeHandle& nh_, std::vector<racing_drone::DroneState> gates_);
+    ros::NodeHandle nh;
+    ros::Publisher gateMarkerPublisher;
+    ros::Timer markerTimer;
+    visualization_msgs::MarkerArray gateMarkers;
+    std::vector<racing_drone::DroneState> gates;
+    void publishGateMarkersCallback(const ros::TimerEvent& timerEvent);
 };

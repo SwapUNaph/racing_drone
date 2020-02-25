@@ -7,8 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /EstimatedOdometry1/Shape1
-        - /FilteredGateMarker1
-        - /RawGateMarker1
+        - /GateMarkerArray1
       Splitter Ratio: 0.5
     Tree Height: 462
   - Class: rviz/Selection
@@ -161,6 +160,14 @@ Visualization Manager:
         "": true
       Queue Size: 10
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /gate_marker_array
+      Name: GateMarkerArray
+      Namespaces:
+        "": true
+      Queue Size: 5
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -186,25 +193,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 22.1068153
+      Distance: 16.1103134
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: 1.92892063
+        Y: -3.12968588
+        Z: 2.0837698
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.785398185
+      Pitch: 0.450398117
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.785398185
+      Yaw: 1.69039798
     Saved: ~
 Window Geometry:
   CameraImage:

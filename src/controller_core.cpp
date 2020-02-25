@@ -51,6 +51,7 @@ Controller::Controller(int rt, int n, std::vector<double> p, double dt_, double 
 	odomSubscriber = nh.subscribe(odomSubTopic, 10, &Controller::odomCallback, this);
 	refSubscriber = nh.subscribe(refSubTopic, 10, &Controller::refCallback, this);
 	enCtrlSubscriber = nh.subscribe("/auto/autonomy_active", 10, &Controller::enCtrlCallback, this);
+	nextGateSubscriber = nh.subscribe("/state_machine/next_gate", 5, &Controller::nextGateCallback, this);
 	cmdPublisher = nh.advertise<geometry_msgs::Twist>(cmdPubTopic, 10);
 	controlTimer = nh.createTimer(ros::Duration(1.0/rate), &Controller::controllerTimerCallback, this);
 
@@ -135,6 +136,8 @@ void Controller::refCallback(const racing_drone::DroneState::ConstPtr& refDroneS
 	refState[6] = 0.0;						 //roll
 	refState[7] = 0.0;						 //pitch
 	refState[8] = refDroneState->yaw;		 //yaw
+	//Yaw ref for next gate
+	//refState[8] = atan2( ( next_gate.position.y - currState[1] ) , ( next_gate.position.x - currState[0] ));
 
 	// ROS_INFO("\nReference x: %f, y: %f, z: %f\n vx: %f, vy: %f, vz: %f\n R: %f, P: %f, Y: %f\n", refState[0], refState[1], refState[2],
 	//  refState[3], refState[4], refState[5], refState[6], refState[7], refState[8]);
@@ -182,6 +185,10 @@ void Controller::computeControlInput(void)
 
 	std::copy(refState.begin()+6, refState.end(), refRPY.begin());
 	std::copy(currState.begin()+6, currState.end(), currRPY.begin());
+	
+	refRPY[2] = atan2( ( next_gate.position.y - currState[1] ) , ( next_gate.position.x - currState[0] ));
+
+	// ROS_INFO("\nRefernce yaw: %f deg", refRPY[2] * 180.0 / M_PI);
 
 	rpy2quat(refRPY, refQuat);
 	rpy2quat(currRPY, currQuat);
@@ -189,7 +196,7 @@ void Controller::computeControlInput(void)
 	diffQuat = quatDifference(refQuat, currQuat);
 	quat2rpy(diffQuat, diffRPY);
 
-	double yaw_control = 1.0 * diffRPY[2];
+	double yaw_control = 5.0 * diffRPY[2];
 	double thrust = 1.0 * (refState[2] - currState[2]);
 	// double pitch_moment = 5.0 * (quad_mpc.sol_x[6] - currState[6]);
 	// double roll_moment = 5.0 * (quad_mpc.sol_x[7] - currState[7]);
@@ -300,4 +307,10 @@ void Controller::publishControlInput(void)
 	// ROS_INFO( "\nControl Published: theta: %f, phi: %f, T: %f, yaw: %f \n", controlInput.linear.y,
 	// 		 controlInput.linear.x, controlInput.linear.z, controlInput.angular.z);
 
+}
+
+void Controller::nextGateCallback(const racing_drone::DroneState::ConstPtr& nxtGate)
+{
+	next_gate = *nxtGate;
+	ROS_INFO("Next Gate: x: %.2f. y: %.2f, z: %.2f", next_gate.position.x, next_gate.position.y, next_gate.position.z);
 }
