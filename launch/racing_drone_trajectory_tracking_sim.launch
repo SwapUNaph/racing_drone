@@ -8,9 +8,9 @@
 <launch>
   <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-	  <!-- <arg name="world_name" value="$(find racing_drone)/worlds/adr_track_one_gate.world"/> -->
-	   <!-- <arg name="world_name" value="$(find racing_drone)/worlds/adr_track_two_gates.world"/> -->
-	   <arg name="world_name" value="$(find racing_drone)/worlds/adr_track_two_gates_close.world"/>
+	   <!-- <arg name="world_name" value="$(find racing_drone)/worlds/adr_track_one_gate.world"/> -->
+	   <arg name="world_name" value="$(find racing_drone)/worlds/adr_track_two_gates.world"/>
+	   <!-- <arg name="world_name" value="$(find racing_drone)/worlds/adr_track_two_gates_close.world"/> -->
      <!-- <arg name="world_name" value="$(find racing_drone)/worlds/adr_track_four_gates_staggered.world"/> -->
   </include>
 
@@ -24,7 +24,7 @@
   <rosparam command="load" file="$(find racing_drone)/params/controller_sim.yaml" />
   <rosparam command="load" file="$(find racing_drone)/params/gate_detector_sim.yaml" />
   <rosparam command="load" file="$(find racing_drone)/params/localizer.yaml" />
-  <rosparam command="load" file="$(find racing_drone)/params/trajectory.yaml" />
+  <rosparam command="load" file="$(find racing_drone)/scripts/trajectory.yaml" />
 
   <!-- Launch state_estimator node -->
   <!-- <node pkg="racing_drone" type="state_estimator" name="state_estimator"  output='screen'/> -->
@@ -33,10 +33,10 @@
   <node pkg="racing_drone" type="controller" name="controller" />
 
   <!-- Launch gate_detector node -->
-  <node pkg="racing_drone" type="gate_detector" name="gate_detector" />
+  <!-- <node pkg="racing_drone" type="gate_detector" name="gate_detector" /> -->
 
   <!-- Launch localizer node -->
-  <node pkg="racing_drone" type="localizer" name="localizer"  />
+  <!-- <node pkg="racing_drone" type="localizer" name="localizer"  /> -->
 
   <!-- Launch state_machine node -->
   <node pkg="racing_drone" type="state_machine" name="state_machine"   output='screen'/>
@@ -45,7 +45,7 @@
   <node type="rqt_plot" name="rqt_plot" pkg="rqt_plot" />
 
   <!-- Launch RVIZ -->
-	<node type="rviz" name="rviz" pkg="rviz" args="-d $(find racing_drone)/rviz/racing_drone.rviz" />
+	<!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find racing_drone)/rviz/racing_drone.rviz" /> -->
     	     
   <!-- Takeoff Command -->
   <node pkg="rostopic" type="rostopic" name="rostopic" args="pub /ardrone/takeoff std_msgs/Empty --once"/>

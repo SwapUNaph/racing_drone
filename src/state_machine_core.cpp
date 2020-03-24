@@ -112,6 +112,7 @@ void StateMachine::updateState(void)
     if( autonomy )
     {
         // enable controller
+        state.des_state.stamp = ros::Time::now();
         controlRefPub.publish(state.des_state);
     }
     else

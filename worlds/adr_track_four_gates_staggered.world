@@ -11,7 +11,7 @@
         <linear>0.01</linear>
         <quadratic>0.001</quadratic>
       </attenuation>
-      <direction>-0.5 0 -0.5</direction>
+      <direction>-10 0 -10</direction>
     </light>
     <light name='light1' type='directional'>
       <cast_shadows>1</cast_shadows>
@@ -24,7 +24,7 @@
         <linear>0.01</linear>
         <quadratic>0.001</quadratic>
       </attenuation>
-      <direction>0.5 0 -0.5</direction>
+      <direction>10 0 -10</direction>
     </light>
     <light name='light2' type='directional'>
       <cast_shadows>1</cast_shadows>
@@ -37,7 +37,7 @@
         <linear>0.01</linear>
         <quadratic>0.001</quadratic>
       </attenuation>
-      <direction>0 -0.5 -0.5</direction>
+      <direction>0 -10 -10</direction>
     </light>
     <light name='light3' type='directional'>
       <cast_shadows>1</cast_shadows>
@@ -50,7 +50,7 @@
         <linear>0.01</linear>
         <quadratic>0.001</quadratic>
       </attenuation>
-      <direction>0 0.5 -0.5</direction>
+      <direction>0 10 -10</direction>
     </light>
     <model name='ground_plane'>
       <static>1</static>
@@ -90,7 +90,7 @@
           <material>
             <script>
               <uri>file://media/materials/scripts/gazebo.material</uri>
-              <name>Gazebo/Grey</name>
+              <name>Gazebo/White</name>
             </script>
           </material>
         </visual>

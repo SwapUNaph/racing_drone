@@ -8,10 +8,8 @@
 <launch>
   <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-	  <!-- <arg name="world_name" value="$(find racing_drone)/worlds/adr_track_one_gate.world"/> -->
 	   <!-- <arg name="world_name" value="$(find racing_drone)/worlds/adr_track_two_gates.world"/> -->
-	   <arg name="world_name" value="$(find racing_drone)/worlds/adr_track_two_gates_close.world"/>
-     <!-- <arg name="world_name" value="$(find racing_drone)/worlds/adr_track_four_gates_staggered.world"/> -->
+     <arg name="world_name" value="$(find racing_drone)/worlds/adr_track_four_gates_staggered.world"/>
   </include>
 
   <!-- Spawn simulated quadrotor uav -->
@@ -23,7 +21,7 @@
   <!-- <rosparam command="load" file="$(find racing_drone)/params/state_estimator.yaml" /> -->
   <rosparam command="load" file="$(find racing_drone)/params/controller_sim.yaml" />
   <rosparam command="load" file="$(find racing_drone)/params/gate_detector_sim.yaml" />
-  <rosparam command="load" file="$(find racing_drone)/params/localizer.yaml" />
+  <rosparam command="load" file="$(find racing_drone)/params/localizer2.yaml" />
   <rosparam command="load" file="$(find racing_drone)/params/trajectory.yaml" />
 
   <!-- Launch state_estimator node -->
@@ -36,10 +34,10 @@
   <node pkg="racing_drone" type="gate_detector" name="gate_detector" />
 
   <!-- Launch localizer node -->
-  <node pkg="racing_drone" type="localizer" name="localizer"  />
+  <node pkg="racing_drone" type="localizer2" name="localizer2"  output='screen'/>
 
   <!-- Launch state_machine node -->
-  <node pkg="racing_drone" type="state_machine" name="state_machine"   output='screen'/>
+  <node pkg="racing_drone" type="state_machine" name="state_machine"   />
 
   <!-- Launch rqt_plot -->
   <node type="rqt_plot" name="rqt_plot" pkg="rqt_plot" />

@@ -135,7 +135,8 @@ void RD::KalmanFilter::predict(vector<double> u)
 	noalias(X_dot) = X_dot_curr;
 	noalias(F) = In + A * dt;
 	noalias(PFt) = prod(P, trans(F));
-	noalias(P) = prod(F, PFt) + Q;
+	ublas::matrix<double> QBt( prod(Q, trans( B*dt) ) );
+	noalias(P) = prod(F, PFt) + prod( B*dt, QBt);
 }
 
 /**

@@ -1,20 +1,14 @@
 localizer:
 
-  # Gain of gate measurements in complimentary filter (0.01 < gain < 1.0)
-  measGain: 1.0
-
   # gates = [ x0, y0, z0, vx0, vy0, vz0, yaw0,
   #           x1, y1, z1, vx1, vy1, vz1, yaw1,
   #           ... ]   { yaw in radians, x y z in meters, vx vy vz in m/s (all in inertial coordinate frame)}
   #
 
-  # # Two Gates
+  # Two Gates
   # gates: [ 7.5, -0.75, 2.25, 0.0, 0.0, 0.0, 0.0, 
   #         -7.5,  0.75, 2.25, 0.0, 0.0, 0.0, 3.1412 ]
 
-  # Two Gates Close
-  gates: [ 4.0, -1.0, 2.25, 0.0, 0.0, 0.0, 0.0, 
-          -4.0,  1.0, 2.25, 0.0, 0.0, 0.0, 3.1412 ]
 
   # Four Gates
   # gates: [ 5.0, 0, 2.25, 0.0, 0.0, 0.0, -1.57, 
@@ -23,12 +17,16 @@ localizer:
   #          0.0, -5.0, 2.25, 0.0, 0.0, 0.0, 0.0 ]
   
 
-  # Four Gates Staggered
-#   gates: [ 9.0, 0.0, 2.25, 0.0, 0.0, 0.0, 0.0, 
-#           10.0, -9.0, 2.25, 0.0, 0.0, 0.0, -1.57, 
-#           1.0, -10.0, 2.25, 0.0, 0.0, 0.0, -3.14, 
-#           0.0, -2.0, 2.25, 0.0, 0.0, 0.0, 1.57 ]
+  # Four GAtes Staggered
+  gates: [ 9.0, 0.0, 2.25, 0.0, 0.0, 0.0, 0.0, 
+          10.0, -9.0, 2.25, 0.0, 0.0, 0.0, -1.57, 
+          1.0, -10.0, 2.25, 0.0, 0.0, 0.0, -3.14, 
+          0.0, -2.0, 2.25, 0.0, 0.0, 0.0, 1.57 ]
 
   odomSubTopic: "/ground_truth/state"
   odomPubTopic: "/localizer/estimated_state"
-  gatePoseSubTopic: "/gate_detector/filtered_gate_pose"
+  gatePoseSubTopic: "/gate_detector/raw_gate_pose"
+
+  predict_rate: 60.0
+  Q: [ 0.5, 0.5, 0.5 ]
+  R: [ 0.1, 0.1, 0.1 ]

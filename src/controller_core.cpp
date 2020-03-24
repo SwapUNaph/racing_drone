@@ -186,7 +186,7 @@ void Controller::computeControlInput(void)
 	std::copy(refState.begin()+6, refState.end(), refRPY.begin());
 	std::copy(currState.begin()+6, currState.end(), currRPY.begin());
 	
-	refRPY[2] = atan2( ( next_gate.position.y - currState[1] ) , ( next_gate.position.x - currState[0] ));
+	// refRPY[2] = atan2( ( next_gate.position.y - currState[1] ) , ( next_gate.position.x - currState[0] ));
 
 	// ROS_INFO("\nRefernce yaw: %f deg", refRPY[2] * 180.0 / M_PI);
 
@@ -196,7 +196,7 @@ void Controller::computeControlInput(void)
 	diffQuat = quatDifference(refQuat, currQuat);
 	quat2rpy(diffQuat, diffRPY);
 
-	double yaw_control = 5.0 * diffRPY[2];
+	double yaw_control = 2.0 * diffRPY[2];
 	double thrust = 1.0 * (refState[2] - currState[2]);
 	// double pitch_moment = 5.0 * (quad_mpc.sol_x[6] - currState[6]);
 	// double roll_moment = 5.0 * (quad_mpc.sol_x[7] - currState[7]);

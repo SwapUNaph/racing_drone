@@ -198,3 +198,16 @@ std::vector<double> rotateVec(std::vector<double> q, std::vector<double> vec)
 
     return result;
 }
+
+void quat2rotmat(std::vector<double>& q, ublas::matrix<double>& R){
+    // w=3, x=0, y=1, z=2
+    R(0,0) = 1.0 - 2*q[1]*q[1] - 2*q[2]*q[2];
+    R(0,1) = 2*q[0]*q[1] - 2*q[2]*q[3];
+    R(0,2) = 2*q[0]*q[2] + 2*q[1]*q[3];
+    R(1,0) = 2*q[0]*q[1] + 2*q[2]*q[3];
+    R(1,1) = 1.0 - 2*q[0]*q[0] - 2*q[2]*q[2];
+    R(1,0) = 2*q[1]*q[2] - 2*q[0]*q[3];
+    R(2,0) = 2*q[0]*q[2] - 2*q[1]*q[3];
+    R(2,1) = 2*q[1]*q[2] + 2*q[0]*q[3];
+    R(2,2) = 1.0 - 2*q[0]*q[0] - 2*q[1]*q[1];
+}

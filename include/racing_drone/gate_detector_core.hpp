@@ -32,6 +32,8 @@
 #include <ros/ros.h>
 #include <ros/time.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Image.h>
@@ -66,17 +68,21 @@ class GateDetectorCore
         std::string odomSubTopic;
         std::string imageOutTopic;
         std::string imuTopic;
+ 
 
+        int gate_count;
         ublas::vector<double> uEKF;
         ublas::vector<double> yEKF;
         std::vector<double> wEKF;
         std::vector<double> droneQ;
+        ublas::matrix<double> droneR;
+        geometry_msgs::Point gateP;
 
         GateDetector gd;
         ExtendedKalmanFilter gateEKF;
         MovAvgFilter gateMAF;
-        geometry_msgs::Pose rawGatePose; 
-        geometry_msgs::Pose filteredGatePose; 
+        geometry_msgs::PoseStamped rawGatePose; 
+        geometry_msgs::PoseWithCovarianceStamped filteredGatePose; 
         std_msgs::Bool success;
 
         cv_bridge::CvImagePtr cv_ptr;

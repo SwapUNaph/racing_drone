@@ -36,17 +36,32 @@ Localizer::Localizer(ros::NodeHandle& nh_, std::string odomSubTopic_, std::strin
                 gatePoseTopic(gatePoseTopic_), gates(gates_), measGain(measGain_)
 {
     odomPublisher = nh.advertise<nav_msgs::Odometry>(odomPubTopic, 5);
+    actGatePosePublisher = nh.advertise<geometry_msgs::PoseStamped>("/localizer/actual_gate_pose", 5);
     odomSubscriber = nh.subscribe(odomSubTopic, 5, &Localizer::odomSubCallback, this);
     gatePoseSubscriber = nh.subscribe(gatePoseTopic, 5, &Localizer::gatePoseSubCallback, this);
     gateDetectionSuccess = nh.subscribe("/gate_detector/success", 5, &Localizer::gdSuccessCallback, this);
+
     inOdom = nav_msgs::Odometry();
     outOdom = inOdom;
     gatePoseDrone = geometry_msgs::Pose();
     gatePoseOrigin = geometry_msgs::Pose();
+    actualGatePoseDrone = geometry_msgs::PoseStamped();
 
     // gatePoseOrigin.position = gates[0].position;
 
     visualGateIndex = 0;
+
+    droneR.resize(3,3);
+    droneQ.resize(4);
+    PosCov.resize(3,3);
+
+    for(int i=0; i<3; i++)
+        for(int j=0; j<3; j++)
+        {
+            if(i==j) droneR(i,j) = 1.0;
+            else droneR(i,j) = 0.0;
+        }
+
 
     ROS_INFO( "Localizer Initialized ...");
 }
@@ -54,20 +69,27 @@ Localizer::Localizer(ros::NodeHandle& nh_, std::string odomSubTopic_, std::strin
 void Localizer::odomSubCallback(const nav_msgs::Odometry::ConstPtr& odomIn)
 {
     inOdom = *odomIn;
-    // ROS_INFO( "Localizer Odom In.");
-}
-
-void Localizer::gatePoseSubCallback(const geometry_msgs::Pose::ConstPtr& gtPose) 
-{
-    // ROS_INFO( "Localizer gate pose callback.");
-    gatePoseDrone = *gtPose;
-    // gatePoseDrone.position = oRd * gatePose.position;
-
-    std::vector<double> gatePosDrone(3), droneQ(4);
     droneQ[0] = inOdom.pose.pose.orientation.x;
     droneQ[1] = inOdom.pose.pose.orientation.y;
     droneQ[2] = inOdom.pose.pose.orientation.z;
     droneQ[3] = inOdom.pose.pose.orientation.w;
+
+    // ROS_INFO( "Localizer Odom In.");
+}
+
+void Localizer::gatePoseSubCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& gtPoseSt) 
+{
+    // ROS_INFO( "Localizer gate pose callback.");
+    gatePoseDrone = gtPoseSt->pose.pose;
+    
+    for(int i=0; i<9; i++)
+        PosCov(i/3,i%3) = gtPoseSt->pose.covariance[i];
+
+    // gatePoseDrone.position = oRd * gatePose.position;
+
+    std::vector<double> gatePosDrone(3);
+
+    quat2rotmat(droneQ, droneR);
 
     gatePosDrone[0] = gatePoseDrone.position.x;
     gatePosDrone[1] = gatePoseDrone.position.y;
@@ -122,7 +144,20 @@ void Localizer::findGate(void)
     gatePoseOrigin.orientation.z = gateQ[2];
     gatePoseOrigin.orientation.w = gateQ[3];
 
+    //IrGD = IrGO - IrDO
+    //DrGD = dRi * (IrGO - IrDO)
+    std::vector<double> IrGD(3), DrGD(3);
+    IrGD[0] = gatePoseOrigin.position.x - inOdom.pose.pose.position.x;
+    IrGD[1] = gatePoseOrigin.position.y - inOdom.pose.pose.position.y;
+    IrGD[2] = gatePoseOrigin.position.z - inOdom.pose.pose.position.z;
 
+    DrGD = rotateVec(quatConjugate(droneQ), IrGD);
+
+    actualGatePoseDrone.pose.position.x = DrGD[0];
+    actualGatePoseDrone.pose.position.y = DrGD[1];
+    actualGatePoseDrone.pose.position.z = DrGD[2];
+    actualGatePoseDrone.header.stamp = ros::Time::now();
+    actGatePosePublisher.publish(actualGatePoseDrone);
 }
 
 /**
@@ -165,13 +200,11 @@ double Localizer::getGateDistance(racing_drone::DroneState gateState)
 
 void Localizer::publishDroneState(void)
 {
-    outOdom = inOdom;
-
-    actualGain = measGain;
-
-    outOdom.pose.pose.position.x = inOdom.pose.pose.position.x + actualGain * (gatePoseOrigin.position.x - gatePoseDrone.position.x - inOdom.pose.pose.position.x);
-    outOdom.pose.pose.position.y = inOdom.pose.pose.position.y + actualGain * (gatePoseOrigin.position.y - gatePoseDrone.position.y - inOdom.pose.pose.position.y);
-    outOdom.pose.pose.position.z = inOdom.pose.pose.position.z + actualGain * (gatePoseOrigin.position.z - gatePoseDrone.position.z - inOdom.pose.pose.position.z);
+    outOdom = nav_msgs::Odometry();
+    outOdom.header.frame_id = "map";
+    outOdom.pose.pose.position.x = inOdom.pose.pose.position.x + measGain * (gatePoseOrigin.position.x - gatePoseDrone.position.x - inOdom.pose.pose.position.x);
+    outOdom.pose.pose.position.y = inOdom.pose.pose.position.y + measGain * (gatePoseOrigin.position.y - gatePoseDrone.position.y - inOdom.pose.pose.position.y);
+    outOdom.pose.pose.position.z = inOdom.pose.pose.position.z + measGain * (gatePoseOrigin.position.z - gatePoseDrone.position.z - inOdom.pose.pose.position.z);
 
     // std::vector<double> gatePoseOriginQ(4), gateRPY(3), droneQ(4), droneRPY(3), gateWRTDroneQ(4), gateWRTDroneRPY(3);
     // gatePoseOriginQ[0] = gatePoseOrigin.orientation.x;
@@ -197,7 +230,14 @@ void Localizer::publishDroneState(void)
 
     // rpy2quat(droneRPY, droneQ);
 
+    ublas::matrix<double> PR( prod(PosCov, droneR));
+    PosCov = prod(trans(droneR), PR);
+
+    for(int i=0; i<9; i++)
+        outOdom.pose.covariance[i] = PosCov(i/3,i%3); 
+
     outOdom.pose.pose.orientation = inOdom.pose.pose.orientation;
+    outOdom.header.stamp = ros::Time::now();
 
     odomPublisher.publish(outOdom);
 }
@@ -217,7 +257,7 @@ GateVisual::GateVisual(ros::NodeHandle& nh_, std::vector<racing_drone::DroneStat
     baseMarker.type  = visualization_msgs::Marker::CUBE;
     baseMarker.header.frame_id = "map";
     baseMarker.color.r = 255.0f;
-    baseMarker.color.g = 0.0f;
+    baseMarker.color.g = 50.0f;
     baseMarker.color.b = 0.0f;
     baseMarker.color.a = 0.50;  
     baseMarker.scale.x = 0.20;

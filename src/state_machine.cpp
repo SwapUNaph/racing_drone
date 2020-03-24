@@ -45,8 +45,10 @@ int main(int argc, char** argv)
     rate.sleep();
 
     std::vector<double> states_str;
+    std::string odom_sub_topic;
 
     ros::param::get("trajectory/states", states_str);
+    ros::param::get("controller/odom_sub_topic", odom_sub_topic);
 
     int N = 10;
     int Ns = states_str.size()/N;
@@ -116,7 +118,7 @@ int main(int argc, char** argv)
   
 
 
-    StateMachine state_machine(nh, "/controller/reference", "/localizer/estimated_state", "/state_machine/autonomy", states );
+    StateMachine state_machine(nh, "/controller/reference", odom_sub_topic, "/state_machine/autonomy", states );
 
     ros::MultiThreadedSpinner multiSpinner(6);
     ros::spin(multiSpinner);

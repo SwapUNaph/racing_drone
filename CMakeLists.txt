@@ -9,9 +9,10 @@ add_compile_options(-std=c++11)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
+find_package(catkin REQUIRED
+  COMPONENTS
   geometry_msgs
-  mavros_msgs
+  #mavros_msgs
   nav_msgs
   roscpp
   rospy
@@ -23,6 +24,10 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(OpenCV REQUIRED )
+#find_package(genmsg REQUIRED)
+#find_package(geometry_msgs REQUIRED)
+#find_package(std_msgs REQUIRED)
+#find_package(nav_msgs REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -78,13 +83,13 @@ find_package(OpenCV REQUIRED )
 # )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES
-   geometry_msgs
-   std_msgs
-   nav_msgs
-   mavros_msgs
- )
+generate_messages(
+  DEPENDENCIES
+  racing_drone
+  geometry_msgs
+  std_msgs
+  nav_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -118,8 +123,8 @@ find_package(OpenCV REQUIRED )
 catkin_package(
   #INCLUDE_DIRS include/racing_drone
   #LIBRARIES racing_drone
-    CATKIN_DEPENDS message_runtime geometry_msgs mavros_msgs nav_msgs roscpp rospy sensor_msgs std_msgs 
-#  DEPENDS system_lib
+  CATKIN_DEPENDS message_runtime geometry_msgs nav_msgs roscpp rospy sensor_msgs std_msgs 
+  #DEPENDS system_lib
 )
 
 ###########
@@ -128,6 +133,7 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
+
 include_directories(
   include
   ${OpenCV_INCLUDE_DIRS}
@@ -137,43 +143,48 @@ include_directories(
 
 
 ## Declare a C++ library
- add_library(common
-   src/common.cpp
- )
- 
- add_library(state_estimator_core
-   src/state_estimator_core.cpp
- )
- 
- add_library(kalman_filter
-   src/KalmanFilter.cpp
- )
 
- add_library(controller_core
-   src/controller_core.cpp
- ) 
+  add_library(common
+  src/common.cpp
+  )
 
- add_library(mpc
-   src/MPC.cpp
- )
- 
-add_library(maf
-   src/MovAvgFilter.cpp
- )
- add_library(pid
-   src/PID.cpp
- )
+  add_library(state_estimator_core
+  src/state_estimator_core.cpp
+  )
 
- add_library(gate_detector_class
-   src/GateDetector.cpp
- )
+  add_library(kalman_filter
+  src/KalmanFilter.cpp
+  )
 
- add_library(gate_detector_core
-   src/gate_detector_core.cpp
- )
+  add_library(controller_core
+  src/controller_core.cpp
+  ) 
+
+  add_library(mpc
+  src/MPC.cpp
+  )
+
+  add_library(maf
+  src/MovAvgFilter.cpp
+  )
+  add_library(pid
+  src/PID.cpp
+  )
+
+  add_library(gate_detector_class
+  src/GateDetector.cpp
+  )
+
+  add_library(gate_detector_core
+  src/gate_detector_core.cpp
+  )
 
   add_library(localizer_core
-   src/localizer_core.cpp
+  src/localizer_core.cpp
+  )
+
+  add_library(localizer2_core
+  src/localizer2_core.cpp
   )
 
   add_library(state_machine_core
@@ -186,7 +197,7 @@ add_library(maf
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
@@ -200,11 +211,20 @@ add_library(maf
 
  add_executable(camera src/camera.cpp)
 
- add_executable(localizer src/localizer.cpp) 
+ add_executable(localizer src/localizer.cpp)  
+ 
+ add_executable(localizer2 src/localizer2.cpp) 
 
  add_executable(state_machine src/state_machine.cpp) 
+
+ add_executable(pd_controller src/pd_controller.cpp) 
  
- #add_dependencies(racing_drone ${catkin_EXPORTED_TARGETS})
+ #add_dependencies(state_estimator racing_drone_generate_messages_cpp)
+ #add_dependencies(controller racing_drone_generate_messages_cpp)
+ #add_dependencies(localizer racing_drone_generate_messages_cpp)
+ #add_dependencies(localizer2 racing_drone_generate_messages_cpp)
+ #add_dependencies(state_machine racing_drone_generate_messages_cpp)
+ #add_dependencies(pd_controller racing_drone_generate_messages_cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -214,9 +234,10 @@ add_library(maf
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
+
  target_link_libraries(
  	state_estimator
  	state_estimator_core
@@ -233,11 +254,19 @@ add_library(maf
   common
   /usr/local/lib/libnlopt.so
   ${catkin_LIBRARIES}
- )
+  )
 
   target_link_libraries(
  	localizer
   localizer_core
+  common
+  ${catkin_LIBRARIES}
+  )
+
+  target_link_libraries(
+ 	localizer2
+  localizer2_core
+  maf
   common
   ${catkin_LIBRARIES}
   )
@@ -251,24 +280,30 @@ add_library(maf
   common
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
- )
+  )
 
-target_link_libraries(
+  target_link_libraries(
   camera
   common
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
- )
+  )
 
-target_link_libraries(
+  target_link_libraries(
   state_machine
   state_machine_core
   common
   ${catkin_LIBRARIES}
- )
+  )
+
+  target_link_libraries(
+  pd_controller
+  pid
+  common
+  ${catkin_LIBRARIES}
+  )
 
 
-  
 
 #############
 ## Install ##
